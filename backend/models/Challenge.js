@@ -5,7 +5,8 @@ const challengeSchema = new mongoose.Schema({
   description: { type: String, required: true },
   points: { type: Number, required: true },
   difficulty: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' },
-  category: { type: String, required: true }
+  category: { type: String, required: true },
+  completedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] // track users who completed it
 });
 
 module.exports = mongoose.model('Challenge', challengeSchema);

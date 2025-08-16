@@ -6,7 +6,8 @@ const triviaSchema = new mongoose.Schema({
   correctAnswer: { type: String, required: true },
   points: { type: Number, default: 5 },
   category: { type: String, required: true },
-  difficulty: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' }
+  difficulty: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' },
+  answeredBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] // track users who answered
 });
 
 module.exports = mongoose.model('Trivia', triviaSchema);

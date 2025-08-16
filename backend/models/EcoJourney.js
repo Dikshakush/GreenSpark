@@ -43,4 +43,5 @@ const ecoJourneySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+
 module.exports = mongoose.model("EcoJourney", ecoJourneySchema);

@@ -5,6 +5,7 @@ const goalSchema = new mongoose.Schema({
   description: { type: String, required: true },
   type: { type: String, enum: ['short', 'long'], default: 'short' },
   completed: { type: Boolean, default: false },
+  points: { type: Number, default: 10 }, // points awarded when goal is completed
   createdAt: { type: Date, default: Date.now }
 });
 
