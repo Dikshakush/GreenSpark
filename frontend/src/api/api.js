@@ -1,10 +1,9 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: '/api', // thanks to the proxy, this will go to http://localhost:5000/api
+  baseURL: import.meta.env.VITE_API_URL,
 });
 
-// Automatically add token to headers if logged in
 API.interceptors.request.use((config) => {
   const userInfo = localStorage.getItem('userInfo');
   if (userInfo) {
