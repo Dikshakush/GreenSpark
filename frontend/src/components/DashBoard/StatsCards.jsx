@@ -1,5 +1,5 @@
 import React from 'react';
-import './Dashboard.css'; 
+import './DashBoard.css'; 
 
 const StatsCards = ({ totalPoints, co2Saved, earnedBadges = [], theme }) => {
   const stats = [

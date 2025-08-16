@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import './Dashboard.css';
+import './DashBoard.css';
 import axios from 'axios';
 
 const BadgesSection = () => {
