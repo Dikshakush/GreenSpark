@@ -6,6 +6,7 @@ import { Modal, Button, ProgressBar, Tabs, Tab } from 'react-bootstrap';
 import { Line } from 'react-chartjs-2';
 import { useNavigate } from 'react-router-dom';
 import Confetti from 'react-confetti';
+
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -34,6 +35,8 @@ const { points } = useContext(PointsContext);
   const [progressData, setProgressData] = useState([]);
   const [quote, setQuote] = useState("");
   const [showConfetti, setShowConfetti] = useState(false);
+  const { updatePoints } = useContext(PointsContext);
+
   const [challenges, setChallenges] = useState({
     daily: { goal: "", progress: 0 },
     weekly: { goal: "", progress: 0 }
@@ -51,11 +54,11 @@ const { points } = useContext(PointsContext);
       }
       const config = { headers: { Authorization: `Bearer ${userInfo.token}` } };
       const { data } = await axios.get('https://greenspark-backend-yuw8.onrender.com/api/ecoactions', config);
-      setActions(data || []);
+      updatePoints(data.points || 0);
     } catch (error) {
       console.error('Error fetching eco actions:', error);
     }
-  }, [userInfo]);
+  }, [userInfo, updatePoints]);
 
   const fetchExtraData = useCallback(async () => {
     try {

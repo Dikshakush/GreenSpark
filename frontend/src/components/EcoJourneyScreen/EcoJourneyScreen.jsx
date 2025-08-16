@@ -1,107 +1,46 @@
-
-
 // EcoJourneyScreen.jsx
-import React, { useEffect, useMemo, useState, useRef, useContext  } from "react";
-import { PointsContext } from "../../context/PointsContext"; // adjust path if needed
+import React, { useEffect, useMemo, useState, useRef, useContext } from "react";
+import { PointsContext } from "../../context/PointsContext";
 import { Button, Card, Form, Modal, ProgressBar } from "react-bootstrap";
 import "../DashBoard/DashBoard.css";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
-
-const STORAGE_KEY = "eco_journey_mock_v2";
-
-// ---- Initial UI state (frontend only; replace from backend later) ----
-const initialState = {
-  points: 0,
-  goals: [
-    { id: 1, text: "Use a reusable bottle for a week", type: "short", done: false },
-    { id: 2, text: "Reduce electricity usage by 10%", type: "long", done: false }
-  ],
-  pledges: [
-    { id: 1, user: "Community", text: "No plastic bags for a week", time: Date.now() - 86400000 }
-  ],
-  leaderboard: [
-    { name: "Alice", points: 350 },
-    { name: "Bob", points: 280 },
-    { name: "You", points: 0 },
-    { name: "Carmen", points: 110 },
-    { name: "Dee", points: 95 }
-  ],
-  streak: 0,                // as requested: show 0d
-  habitsBadges: [],         // as requested: “No badges yet”
-  unlockedLocations: ["Home"],
-  lastSpin: null
+const getAuthConfig = () => {
+  const token = localStorage.getItem("token");
+  return token
+    ? { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
+    : {};
 };
 
-const randomFrom = (arr) => arr[Math.floor(Math.random() * arr.length)];
-
-const sampleTrivia = [
-  {
-    q: "What gas do trees absorb from the atmosphere?",
-    options: ["CO₂", "O₂", "N₂", "H₂"],
-    ans: "CO₂",
-    points: 10
-  },
-  {
-    q: "Which is a recyclable material?",
-    options: ["Glass", "Styrofoam", "Grease-laden pizza box", "Wet tissues"],
-    ans: "Glass",
-    points: 8
-  },
-  {
-    q: "What's an eco-friendly commute option?",
-    options: ["Car alone", "Bike", "Helicopter", "Single rider taxi"],
-    ans: "Bike",
-    points: 6
-  }
-];
-
-const challengesBank = [
-  "Unplug chargers when not in use",
-  "Use public transport for one trip",
-  "Bring reusable cutlery for lunch",
-  "Switch to LED bulbs for one room",
-  "Compost kitchen scraps for a week"
-];
-
-const spinPrizes = [
-  { label: "5 pts", type: "points", value: 5 },
-  { label: "10 pts", type: "points", value: 10 },
-  { label: "Eco Tip", type: "tip", value: "Use a clothesline instead of dryer" },
-  { label: "Badge", type: "badge", value: "Spinner Novice" },
-  { label: "No win", type: "none", value: null }
-];
-
-
+// Helper for random challenge
+const randomFrom = (arr) => (arr && arr.length ? arr[Math.floor(Math.random() * arr.length)] : "");
 
 export default function EcoJourneyScreen() {
-  const { points, updatePoints } = useContext(PointsContext);
-  const nav = useNavigate?.() || (() => {});
-  const [state, setState] = useState(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : initialState;
-    } catch {
-      return initialState;
-    }
+  const { points: _points, updatePoints } = useContext(PointsContext);
+
+  const nav = useNavigate();
+  const [state, setState] = useState({
+    points: 0,
+    goals: [],
+    pledges: [],
+    leaderboard: [],
+    streak: 0,
+    habitsBadges: [],
+    unlockedLocations: [],
+    lastSpin: null,
   });
 
-  // UI micro-state
   const [newGoalText, setNewGoalText] = useState("");
   const [pledgeText, setPledgeText] = useState("");
   const [showSpinModal, setShowSpinModal] = useState(false);
   const [spinResult, setSpinResult] = useState(null);
-  const [currentTrivia, setCurrentTrivia] = useState(() => randomFrom(sampleTrivia));
-  const [randomChallenge, setRandomChallenge] = useState(() => randomFrom(challengesBank));
+  const [randomChallenge, setRandomChallenge] = useState(""); 
+  const [currentTrivia, setCurrentTrivia] = useState({});
+  const [challengesBank, setChallengesBank] = useState([]);
   const confettiContainerRef = useRef(null);
-  
 
-  // persist locally (you’ll replace with backend calls later)
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [state]);
-
-  // small confetti
+  // ---- Helper: confetti ----
   const launchConfetti = (count = 40) => {
     const container = confettiContainerRef.current;
     if (!container) return;
@@ -116,106 +55,255 @@ export default function EcoJourneyScreen() {
       setTimeout(() => s.remove(), 2200 + Math.random() * 600);
     }
   };
-  
 
-  // ---- helper: ALWAYS keep points + leaderboard("You") in sync ----
-  const addPoints = (delta) => {
-  if (!delta) return;
-  
-  // update global points
-  const newPoints = points + delta;
-  updatePoints(newPoints);
+  // ---- Load backend data on mount ----
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Get points
+        const pointsRes = await axios.get(
+          "https://greenspark-backend-yuw8.onrender.com/api/users/points",
+          getAuthConfig()
+        );
 
-  // keep leaderboard in local state
-  setState((s) => {
-    let lb = [...s.leaderboard];
-    const youIdx = lb.findIndex((u) => u.name === "You");
-    if (youIdx >= 0) {
-      lb[youIdx] = { ...lb[youIdx], points: newPoints };
-    } else {
-      lb = [...lb, { name: "You", points: newPoints }];
+        // Get EcoJourney (goals, pledges, streak, badges, unlocked locations, last spin)
+        const journeyRes = await axios.get(
+          "https://greenspark-backend-yuw8.onrender.com/api/eco-journey",
+          getAuthConfig()
+        );
+
+        const { goals, pledges, streak, habitsBadges, unlockedLocations, lastSpin } =
+          journeyRes.data;
+
+        // Get leaderboard
+        const leaderboardRes = await axios.get(
+          "https://greenspark-backend-yuw8.onrender.com/api/leaderboard?period=all",
+          getAuthConfig()
+        );
+
+        // fetch challenges
+         const challengesRes = await axios.get(
+        "https://greenspark-backend-yuw8.onrender.com/api/eco-journey/challenges",
+        getAuthConfig()
+      );
+      setChallengesBank(challengesRes.data.challenges || []);
+
+        setState({
+          points: pointsRes.data.points || 0,
+          goals,
+          pledges,
+          leaderboard: leaderboardRes.data.leaderboard || [],
+          streak: streak || 0,
+          habitsBadges: habitsBadges || [],
+          unlockedLocations: unlockedLocations || ["Home"],
+          lastSpin: lastSpin || null,
+        });
+
+        updatePoints(pointsRes.data.points || 0);
+      } catch (err) {
+        console.error("Error fetching EcoJourney data:", err);
+      }
+    };
+
+    fetchData();
+  }, [updatePoints]);
+
+  // ---- Points update helper ----
+  const addPoints = async (delta) => {
+    if (!delta) return;
+    const newPoints = state.points + delta;
+
+    try {
+      await axios.post(
+        "https://greenspark-backend-yuw8.onrender.com/api/users/points",
+        { points: newPoints },
+        getAuthConfig()
+      );
+    } catch (err) {
+      console.error("Failed to add points", err);
     }
-    return { ...s, leaderboard: lb };
-  });
-};
 
-  // actions
-  const addGoal = (type = "short") => {
-    if (!newGoalText.trim()) return;
-    const g = { id: Date.now(), text: newGoalText.trim(), type, done: false };
-    setState((s) => ({ ...s, goals: [g, ...s.goals] }));
-    setNewGoalText("");
+    updatePoints(newPoints);
+    setState((s) => {
+      const lb = [...s.leaderboard];
+      const youIdx = lb.findIndex((u) => u.name === "You");
+      if (youIdx >= 0) {
+        lb[youIdx] = { ...lb[youIdx], points: newPoints };
+      } else {
+        lb.push({ name: "You", points: newPoints });
+      }
+      return { ...s, leaderboard: lb, points: newPoints };
+    });
   };
 
-  const toggleGoal = (id) => {
-    setState((s) => {
-      const goals = s.goals.map((g) => (g.id === id ? { ...g, done: !g.done } : g));
-      return { ...s, goals };
-    });
-    // award points when marking as done (remove if backend differs)
-    const g = state.goals.find((x) => x.id === id);
+  // ---- Add new goal ----
+  const addGoal = async (type = "short") => {
+    if (!newGoalText.trim()) return;
+    try {
+      const res = await axios.post(
+        "https://greenspark-backend-yuw8.onrender.com/api/goals",
+        { text: newGoalText.trim(), type },
+        getAuthConfig()
+      );
+      const createdGoal = res.data;
+      setState((s) => ({ ...s, goals: [createdGoal, ...s.goals] }));
+      setNewGoalText("");
+    } catch (err) {
+      console.error("Failed to add goal:", err.response?.data || err);
+    }
+  };
+
+  // ---- Toggle goal completion ----
+  const toggleGoal = async (id) => {
+    const g = state.goals.find((x) => x._id === id || x.id === id);
     const willBeDone = g && !g.done;
+
     if (willBeDone) {
       addPoints(15);
       launchConfetti(28);
     }
+
+    setState((s) => {
+      const goals = s.goals.map((g) => (g._id === id || g.id === id ? { ...g, done: !g.done } : g));
+      return { ...s, goals };
+    });
+
+    try {
+      await axios.post(
+        `https://greenspark-backend-yuw8.onrender.com/api/goals/${id}/toggle`,
+        {},
+        getAuthConfig()
+      );
+    } catch (err) {
+      console.error("Failed to toggle goal:", err.response?.data || err);
+    }
   };
 
-  const addPledge = () => {
-    if (!pledgeText.trim()) return;
-    const p = { id: Date.now(), user: "You", text: pledgeText.trim(), time: Date.now() };
-    setState((s) => ({ ...s, pledges: [p, ...s.pledges] }));
-    setPledgeText("");
+  // ---- Complete a random challenge ----
+  const completeRandomChallenge = async () => {
+    try {
+      await axios.post(
+        "https://greenspark-backend-yuw8.onrender.com/api/eco-journey/challenges/complete",
+        { challengeId: randomChallenge },
+        getAuthConfig()
+      );
+
+      addPoints(8);
+
+      setState((s) => {
+        const newUnlocked = s.unlockedLocations.includes(randomChallenge)
+          ? s.unlockedLocations
+          : [...s.unlockedLocations, randomChallenge];
+        return { ...s, unlockedLocations: newUnlocked };
+      });
+
+      launchConfetti(24);
+      setRandomChallenge(randomFrom(challengesBank)?._id || "");
+    } catch (err) {
+      console.error("Failed to complete challenge:", err.response?.data || err);
+    }
   };
 
-  const spinWheel = () => {
-    const prize = randomFrom(spinPrizes);
-    setSpinResult(prize);
-    setShowSpinModal(true);
-    setTimeout(() => {
-      if (prize.type === "points") {
-        addPoints(prize.value);
+  // ---- Answer trivia question ----
+  const answerTrivia = async (option) => {
+    try {
+      let earnedPoints = 0;
+      if (option === currentTrivia.correctAnswer) {
+        earnedPoints = currentTrivia.points;
+        addPoints(earnedPoints);
+        launchConfetti(36);
+      }
+
+      await axios.post(
+        `https://greenspark-backend-yuw8.onrender.com/api/eco-journey/trivia/${currentTrivia._id}`,
+        { answer: option },
+        getAuthConfig()
+      );
+
+      // fetch next trivia from backend
+      const nextTriviaRes = await axios.get(
+        "https://greenspark-backend-yuw8.onrender.com/api/eco-journey/trivia/next",
+        getAuthConfig()
+      );
+      setCurrentTrivia(nextTriviaRes.data);
+    } catch (err) {
+      console.error("Failed to answer trivia:", err.response?.data || err);
+    }
+  };
+
+  // ---- Log habit action ----
+  const logHabitAction = async () => {
+    try {
+      await axios.post(
+        "https://greenspark-backend-yuw8.onrender.com/api/actions",
+        { actionType: "habit", description: "Daily habit logged", points: 5 },
+        getAuthConfig()
+      );
+
+      const streakRes = await axios.post(
+        "https://greenspark-backend-yuw8.onrender.com/api/eco-journey/streak/increment",
+        {},
+        getAuthConfig()
+      );
+
+      const newStreak = streakRes.data.streak || 0;
+
+      setState((s) => ({ ...s, streak: newStreak }));
+
+      addPoints(5);
+      launchConfetti(18);
+    } catch (err) {
+      console.error("Failed to log habit action:", err.response?.data || err);
+    }
+  };
+
+  // ---- Spin wheel ----
+  const spinWheel = async () => {
+    try {
+      const res = await axios.post(
+        "https://greenspark-backend-yuw8.onrender.com/api/spin",
+        {},
+        getAuthConfig()
+      );
+      setSpinResult(res.data.prize || res.data);
+      setShowSpinModal(true);
+
+      // Update points/badges
+      if (res.data.prize?.type === "points") {
+        addPoints(res.data.prize.value);
         launchConfetti(30);
-      } else if (prize.type === "badge") {
-        setState((s) => ({ ...s, habitsBadges: [...s.habitsBadges, prize.value], lastSpin: { prize, time: Date.now() } }));
+      } else if (res.data.prize?.type === "badge") {
+        setState((s) => ({
+          ...s,
+          habitsBadges: [...s.habitsBadges, res.data.prize.value],
+          lastSpin: { prize: res.data.prize, time: Date.now() },
+        }));
         launchConfetti(30);
       } else {
-        setState((s) => ({ ...s, lastSpin: { prize, time: Date.now() } }));
+        setState((s) => ({ ...s, lastSpin: { prize: res.data.prize, time: Date.now() } }));
       }
-    }, 400);
-  };
-
-  const completeRandomChallenge = () => {
-    addPoints(8);
-    setState((s) => {
-      const newUnlocked = s.unlockedLocations.includes(randomChallenge)
-        ? s.unlockedLocations
-        : [...s.unlockedLocations, randomChallenge];
-      return { ...s, unlockedLocations: newUnlocked };
-    });
-    launchConfetti(24);
-    setRandomChallenge(randomFrom(challengesBank));
-  };
-
-  const answerTrivia = (option) => {
-    if (option === currentTrivia.ans) {
-      addPoints(currentTrivia.points);
-      launchConfetti(36);
+    } catch (err) {
+      console.error("Failed to spin wheel:", err.response?.data || err);
     }
-    setTimeout(() => setCurrentTrivia(randomFrom(sampleTrivia)), 500);
   };
 
-  const logHabitAction = () => {
-    setState((s) => {
-      const newStreak = (s.streak || 0) + 1;
-      const badges = [...s.habitsBadges];
-      if (newStreak % 7 === 0) badges.push(`Streak ${newStreak} days`);
-      return { ...s, streak: newStreak, habitsBadges: badges };
-    });
-    launchConfetti(18);
+  // ---- Add pledge ----
+  const addPledge = async () => {
+    if (!pledgeText.trim()) return;
+    try {
+      const res = await axios.post(
+        "https://greenspark-backend-yuw8.onrender.com/api/eco-journey/pledges",
+        { text: pledgeText.trim() },
+        getAuthConfig()
+      );
+      setState((s) => ({ ...s, pledges: [res.data, ...s.pledges] }));
+      setPledgeText("");
+    } catch (err) {
+      console.error("Failed to add pledge:", err.response?.data || err);
+    }
   };
 
-  // derived
+  // ---- UI Derived: top 5 leaderboard ----
   const top5 = useMemo(() => {
     const sorted = [...state.leaderboard].sort((a, b) => b.points - a.points).slice(0, 5);
     if (!sorted.some((u) => u.name === "You")) {
@@ -223,7 +311,7 @@ export default function EcoJourneyScreen() {
       sorted.push(you);
     }
     return sorted;
-  }, [state.leaderboard, state.points]);
+  }, [state.leaderboard, state.points]);   
 
   return (
     <div className="dashboard-screen dark" style={{ padding: "2rem", gap: "1.25rem" }}>
@@ -535,5 +623,4 @@ export default function EcoJourneyScreen() {
       `}</style>
     </div>
   );
-}   
-
+}
