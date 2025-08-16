@@ -322,7 +322,9 @@ export default function EcoJourneyScreen() {
         </Card>
       </div>
 
+
       {/* Middle row: Map / Spin / Random Challenge */}
+
       <div className="eco-grid-row middle">
         {/* Achievements Map */}
         <Card className="glass-card" style={{ padding: 16 }}>
@@ -457,10 +459,12 @@ export default function EcoJourneyScreen() {
           <div style={{ marginTop: 8 }}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <div>Total Points</div>
+              <p>{state.points} pts</p>
               <div style={{ fontWeight: 700, color: "#4fc3ff" }}>{state.points} pts</div>
             </div>
             <div style={{ marginTop: 8, display: "flex", justifyContent: "space-between" }}>
               <div>CO₂ Saved (est.)</div>
+              <p>{(state.points * 0.05).toFixed(1)} kg</p> {/* example: 1 point = 0.05 kg CO₂ */}
               <div style={{ fontWeight: 700 }}>{(state.points * 0.5).toFixed(1)} kg</div>
             </div>
 
@@ -471,7 +475,7 @@ export default function EcoJourneyScreen() {
                 ? state.goals.filter((g) => g.done).map((g) => (
                     <div key={g.id} className="glass-card" style={{ padding: "6px 8px" }}>{g.text}</div>
                   ))
-                : <small style={{ color: "#9fb4c9" }}>No achievements yet</small>}
+                : <small style={{ color: "#9fb4c9" }}>No achievements yet!</small>}
             </div>
           </div>
         </Card>
