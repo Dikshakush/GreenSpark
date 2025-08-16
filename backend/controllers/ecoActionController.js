@@ -2,14 +2,12 @@ const EcoAction = require('../models/ecoActionModel.js');
 const User = require('../models/User.js');
 const ChallengeBadge = require('../models/badgeModel.js');
 
-// 📌 Log a new eco action (proof already uploaded in route)
+// 📌 Log a new eco action
 const logEcoAction = async (req, res) => {
   const { actionType, proofUrl } = req.body;
   const userId = req.user?._id;
 
-  if (!userId) {
-    return res.status(401).json({ message: 'User authentication required' });
-  }
+  if (!userId) return res.status(401).json({ message: 'User authentication required' });
 
   const pointsMap = {
     recycling: 10,
@@ -20,35 +18,30 @@ const logEcoAction = async (req, res) => {
   };
 
   const pointsEarned = pointsMap[actionType];
-  if (!pointsEarned) {
-    return res.status(400).json({ message: 'Invalid action type' });
-  }
-
-  if (!proofUrl) {
-    return res.status(400).json({ message: 'Proof image URL is required' });
-  }
+  if (!pointsEarned) return res.status(400).json({ message: 'Invalid action type' });
+  if (!proofUrl) return res.status(400).json({ message: 'Proof image URL is required' });
 
   try {
-    // 1️⃣ Create eco action record (no upload here)
     const action = await EcoAction.create({
       user: userId,
       actionType,
       pointsEarned,
-      proofUrl, // already from Cloudinary
+      proofUrl,
       status: 'pending',
     });
 
-    // 2️⃣ Update user points and assign badges
     const user = await User.findById(userId).populate('earnedBadges');
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
+    // Update points
     user.totalPoints += pointsEarned;
 
+    // Update streak
+    await user.updateStreak();
+
+    // Assign badges
     const badgeRules = await ChallengeBadge.find({});
     const allActions = await EcoAction.find({ user: userId });
-
     const actionCounts = allActions.reduce((acc, curr) => {
       acc[curr.actionType] = (acc[curr.actionType] || 0) + 1;
       return acc;
@@ -56,14 +49,10 @@ const logEcoAction = async (req, res) => {
 
     const alreadyEarnedIds = user.earnedBadges.map(b => b._id.toString());
     const newBadges = badgeRules.filter(
-      rule =>
-        actionCounts[rule.type] >= rule.threshold &&
-        !alreadyEarnedIds.includes(rule._id.toString())
+      rule => actionCounts[rule.type] >= rule.threshold && !alreadyEarnedIds.includes(rule._id.toString())
     );
 
-    if (newBadges.length > 0) {
-      user.earnedBadges.push(...newBadges.map(b => b._id));
-    }
+    if (newBadges.length > 0) user.earnedBadges.push(...newBadges.map(b => b._id));
 
     await user.save();
 
@@ -72,6 +61,7 @@ const logEcoAction = async (req, res) => {
       action,
       newBadges,
       totalPoints: user.totalPoints,
+      streak: user.streak.count
     });
 
   } catch (error) {
@@ -84,14 +74,9 @@ const logEcoAction = async (req, res) => {
 const getEcoActions = async (req, res) => {
   try {
     const userId = req.user?._id;
+    if (!userId) return res.status(401).json({ message: 'User authentication required' });
 
-    if (!userId) {
-      return res.status(401).json({ message: 'User authentication required' });
-    }
-
-    const actions = await EcoAction.find({ user: userId })
-      .sort({ createdAt: -1 });
-
+    const actions = await EcoAction.find({ user: userId }).sort({ createdAt: -1 });
     res.status(200).json(actions);
   } catch (error) {
     console.error('Error fetching eco actions:', error);
