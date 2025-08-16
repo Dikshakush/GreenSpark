@@ -180,3 +180,17 @@ exports.incrementStreak = async (req, res) => {
     res.status(500).json({ message: 'Server Error' });
   }
 };
+
+exports.addPledge = async (req, res) => {
+  try {
+    const pledge = await Pledge.create({
+      text: req.body.text,
+      user: req.user.name,
+      userId: req.user._id,
+    });
+    res.status(201).json(pledge);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
