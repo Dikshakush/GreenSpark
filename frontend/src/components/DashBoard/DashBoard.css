@@ -1,0 +1,201 @@
+
+/* ===== Dashboard Layout ===== */
+.dashboard-screen {
+  padding: 2rem;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #e0f7ff, #ffffff);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  font-family: 'Inter', sans-serif;
+}
+
+.dashboard-screen.dark {
+  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+  color: #f5faff;
+}
+
+/* ===== Glassmorphism Card ===== */
+.glass-card {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  backdrop-filter: blur(12px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 24px rgba(7, 10, 11, 0.944);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.dashboard-screen.dark .glass-card {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.glass-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+}
+
+/* ===== Header ===== */
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dashboard-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.dashboard-sub {
+  opacity: 0.8;
+  font-size: 0.95rem;
+}
+
+/* ===== Welcome Card ===== */
+.welcome-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.welcome-card h4 {
+  margin: 0;
+  font-weight: 600;
+}
+
+.log-action-btn {
+  border-radius: 12px;
+  font-weight: 600;
+  padding: 0.6rem 1.2rem;
+}
+
+/* ===== Stats Row ===== */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+}
+
+/* ===== Dashboard Grid ===== */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.left-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ===== Tabs Styling ===== */
+#dashboard-tabs.nav-tabs {
+  border-bottom: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+#dashboard-tabs .nav-link {
+  border: none;
+  border-radius: 10px;
+  padding: 0.6rem 1rem;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.25);
+  color: inherit;
+  transition: background 0.25s ease, transform 0.2s ease;
+}
+
+.dashboard-screen.dark #dashboard-tabs .nav-link {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+#dashboard-tabs .nav-link:hover {
+  background: rgba(255, 255, 255, 0.35);
+  transform: translateY(-2px);
+}
+
+#dashboard-tabs .nav-link.active {
+  background: linear-gradient(135deg, #4facfe, #00f2fe);
+  color: white;
+  font-weight: 600;
+}
+
+/* ===== Chart Wrapper ===== */
+.chart-wrapper {
+  padding: 1rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  backdrop-filter: blur(12px) saturate(150%);
+}
+
+/* ===== Leaderboard ===== */
+.stats-panel ol {
+  margin-top: 1rem;
+  padding-left: 1.5rem;
+}
+
+.stats-panel li {
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+/* ===== Progress Bars ===== */
+.progress {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  height: 14px;
+}
+
+.progress-bar {
+  border-radius: 12px;
+  background: linear-gradient(90deg, #4facfe, #00f2fe);
+  font-size: 0.75rem;
+}
+
+/* ===== Buttons ===== */
+.btn {
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.btn-outline-success,
+.btn-outline-secondary {
+  border-width: 2px;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  .welcome-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+.custom-tabs .nav-link {
+  color: rgba(225, 232, 235, 0.951) !important;
+}
+
+.tab-content-black {
+  color: rgb(233, 238, 240) !important;
+  padding: 1rem;
+}
+
+.chart-row .glass-card {
+  max-width: 100%;
+  height: auto;
+}
+
+.challenge-section p,
+.challenge-section h5 {
+  color: rgb(220, 232, 235) !important;
+}

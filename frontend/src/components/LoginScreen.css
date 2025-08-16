@@ -1,0 +1,130 @@
+/* LoginScreen.css */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
+
+.login-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  width: 100%;
+  background: linear-gradient(135deg, #090334 0%, #e9ecef 100%);
+  padding-top: 80px; /* Space from nav bar */
+  padding-bottom: 40px; /* Space from bottom */
+}
+
+.login-card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+  background: rgb(229, 231, 239);
+  width: 100%;
+  max-width: 400px;
+  padding: 2rem;
+  margin: auto 0; /* Centers vertically within the container */
+}
+
+.login-body {
+  padding: 0;
+}
+
+.login-btn {
+  background-color: #200963;
+  border: none;
+  padding: 10px;
+  font-weight: 500;
+  height: 45px;
+  width: 100%;
+}
+
+.login-btn:hover {
+  background-color: #200963;
+}
+
+.login-btn:disabled {
+  background-color: #200963;
+}
+
+.forgot-password {
+  color: #6c757d;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.forgot-password:hover {
+  text-decoration: underline;
+  color: #200963;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: #6c757d;
+  font-size: 0.9rem;
+  margin: 1.5rem 0;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.divider::before {
+  margin-right: 1rem;
+}
+
+.divider::after {
+  margin-left: 1rem;
+}
+
+.social-login .btn {
+  border-radius: 5px;
+  padding: 10px;
+  height: 45px;
+  font-size: 0.9rem;
+  width: 100%;
+}
+
+.register-link {
+  color: #200963;
+  font-weight: 500;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.register-link:hover {
+  text-decoration: underline;
+}
+
+.form-control, .input-group-text {
+  height: 45px;
+}
+
+.form-label {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.alert {
+  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+}
+
+@media (max-height: 700px) {
+  .login-container {
+    padding-top: 40px;
+    padding-bottom: 20px;
+  }
+}

@@ -1,0 +1,22 @@
+.badge-popup-content {
+  background: #222;
+  color: #fff;
+  border: 2px solid gold;
+  border-radius: 12px;
+  animation: popIn 0.4s ease-out;
+}
+
+.badge-popup-animation {
+  font-size: 1.8rem;
+  animation: sparkle 1s infinite alternate;
+}
+
+@keyframes popIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes sparkle {
+  from { text-shadow: 0 0 5px gold, 0 0 10px yellow; }
+  to { text-shadow: 0 0 15px orange, 0 0 30px gold; }
+}

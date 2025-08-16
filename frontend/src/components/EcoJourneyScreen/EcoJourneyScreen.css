@@ -1,0 +1,396 @@
+.eco-journey-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: 'Arial', sans-serif;
+  color: #2c3e50;
+}
+
+.eco-header {
+  text-align: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #ecf0f1;
+}
+
+.eco-header h1 {
+  color: #27ae60;
+  margin-bottom: 5px;
+}
+
+.eco-header p {
+  color: #7f8c8d;
+}
+
+.eco-section {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+h2, h3, h4 {
+  color: #27ae60;
+}
+
+.goal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.goal-form input[type="text"] {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.goal-type {
+  display: flex;
+  gap: 15px;
+  margin: 5px 0;
+}
+
+.goal-type label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.goal-form button {
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+.goal-form button:hover {
+  background-color: #219653;
+}
+
+.goals-list ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.goals-list li {
+  background-color: white;
+  padding: 10px 15px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.goal-type-tag {
+  font-size: 12px;
+  background-color: #e8f5e9;
+  color: #27ae60;
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin: 0 10px;
+}
+
+.undo-btn {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.streak-display {
+  text-align: center;
+  margin: 15px 0;
+}
+
+.streak-days {
+  font-size: 24px;
+  font-weight: bold;
+  color: #27ae60;
+}
+
+.reset-btn {
+  background-color: #f39c12;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+.badges-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.badge {
+  text-align: center;
+}
+
+.badge img {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+}
+
+.badge p {
+  margin: 5px 0 0;
+  font-size: 12px;
+}
+
+.leaderboard-list {
+  list-style-type: none;
+  padding: 0;
+}
+
+.leaderboard-list li {
+  padding: 10px;
+  margin-bottom: 5px;
+  background-color: white;
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.leaderboard-list li:nth-child(1) {
+  font-weight: bold;
+  color: #f1c40f;
+}
+
+.leaderboard-list li:nth-child(2) {
+  color: #95a5a6;
+}
+
+.leaderboard-list li:nth-child(3) {
+  color: #cd7f32;
+}
+
+.points {
+  font-weight: bold;
+  color: #27ae60;
+}
+
+.map-placeholder {
+  background-color: white;
+  padding: 20px;
+  border-radius: 4px;
+  text-align: center;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.spin-btn {
+  background-color: #9b59b6;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  margin-top: 10px;
+}
+
+.wheel-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.wheel-content {
+  background-color: white;
+  padding: 30px;
+  border-radius: 8px;
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+}
+
+.wheel-visual {
+  width: 200px;
+  height: 200px;
+  background-color: #f1f1f1;
+  border-radius: 50%;
+  margin: 20px auto;
+  position: relative;
+  overflow: hidden;
+}
+
+.random-challenge {
+  background-color: #e8f5e9;
+}
+
+.complete-btn {
+  background-color: #2ecc71;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  margin-top: 10px;
+}
+
+.search-container {
+  margin-top: 20px;
+}
+
+.search-container input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.empty-message {
+  color: #7f8c8d;
+  font-style: italic;
+  text-align: center;
+  padding: 15px;
+}
+
+.loading, .error {
+  text-align: center;
+  padding: 50px;
+  font-size: 18px;
+}
+
+.error {
+  color: #e74c3c;
+}
+/* Add these to your EcoJourneyScreen.css */
+
+.stats-section {
+  display: flex;
+  justify-content: space-around;
+  margin: 20px 0;
+}
+
+.stat-card {
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  flex: 1;
+  margin: 0 10px;
+}
+
+.stat-card h3 {
+  margin: 0 0 5px 0;
+  color: #27ae60;
+}
+
+.stat-card p {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 0;
+}
+
+.trivia-section {
+  background-color: #e8f5e9;
+}
+
+.trivia-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.trivia-options button {
+  padding: 10px;
+  border: 1px solid #27ae60;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.trivia-options button:hover {
+  background: #27ae60;
+  color: white;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  max-width: 500px;
+  width: 90%;
+  text-align: center;
+}
+
+.wheel {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: conic-gradient(
+    #e74c3c 0% 20%,
+    #3498db 20% 40%,
+    #2ecc71 40% 60%,
+    #f1c40f 60% 80%,
+    #9b59b6 80% 100%
+  );
+  margin: 20px auto;
+  position: relative;
+}
+
+.wheel::after {
+  content: '⬆';
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 30px;
+}
+
+.completed {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.eco-tip {
+  background: #e8f5e9;
+  padding: 10px;
+  border-radius: 4px;
+  margin-top: 10px;
+  font-style: italic;
+}

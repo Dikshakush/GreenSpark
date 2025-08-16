@@ -1,0 +1,161 @@
+/* RegisterScreen.css */
+html, body {
+  height: 100%; /* Make sure the flex container can center vertically */
+  margin: 0;
+}
+
+.register-container {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  display: flex; justify-content: center; align-items: center;
+  background-color: #524565;
+  padding: 40px; box-sizing: border-box;
+}
+
+.register-box {
+  display: flex;
+  width: 100%;
+  height: 90%;
+  max-width: 900px;
+  background: rgb(52, 40, 67);
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+}
+
+.image-section {
+  flex: 1;
+  display: flex;
+}
+
+.image-carousel {
+  position: relative;
+  width: 100%;
+  height: 680px; /* fix the height as needed */
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.carousel-slide {
+  position: absolute;
+  top: 10px;     /* 20px from top */
+  bottom: 10px;  /* 40px from bottom */
+  left: 10px;    /* 20px from left */
+  right: 10px;   /* 20px from right for equal horizontal spacing */
+  background-size: cover;
+  background-position: center;
+  border-radius: 15px; /* curved corners */
+  opacity: 0;
+  transition: opacity 1s ease-in-out;
+}
+
+.carousel-slide.active {
+  opacity: 1;
+   /* keep absolute, already set */
+}
+
+.form-section {
+  flex: 1;
+  padding: 50px;
+  display: flex;
+  align-items: center;
+}
+
+.register-card {
+  border: none;
+  background: transparent;
+}
+
+.register-card h2 {
+  color: white;
+  font-weight: 600;
+}
+
+.login-link {
+  color: #6a408d;
+  font: helevetica;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.login-link:hover {
+  text-decoration: underline;
+}
+
+.register-btn {
+  background-color: #6a408d;
+  border: none;
+  padding: 12px;
+  font-weight: 500;
+}
+
+.register-btn:hover {
+  background-color: #5a3878;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: #6c757d;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.divider::before {
+  margin-right: 1rem;
+}
+
+.divider::after {
+  margin-left: 1rem;
+}
+
+.social-login-buttons {
+  display: flex;
+  gap: 15px;
+}
+
+.social-btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: white;
+}
+.form-section label,
+.form-section .form-label {
+  color: white !important;
+}
+.form-section .text-center p {
+  color: white;
+}
+.divider {
+  color: white !important;
+}
+
+/* Responsive adjustments */
+@media (min-width: 992px) {
+  .image-section {
+    display: block;
+  }
+}
+
+@media (max-width: 768px) {
+  .register-box {
+    flex-direction: column;
+    max-width: 500px;
+  }
+  
+  .form-section {
+    padding: 30px;
+    border-radius: 15px;
+  }
+}

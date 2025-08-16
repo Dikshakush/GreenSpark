@@ -1,0 +1,113 @@
+.about-wrapper {
+  min-height: 100vh; /* Let main sections fill viewport */
+  display: flex;
+  flex-direction: column;
+}
+
+.about-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Footer - small height, no clipping */
+.about-section.black-background {
+  flex: 0 0 auto;
+  height: 50px;
+  background-color: #000;
+  color: #fff;
+  display: flex;
+  align-items: center; /* vertical center */
+  justify-content: center; /* horizontal center */
+}
+
+.about-section.black-background p {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 50px; /* exactly matches footer height */
+  white-space: nowrap; /* prevent text wrapping */
+}
+
+.container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.blue-background,
+.white-background {
+  min-height: 30vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.blue-background {
+  background-color: #08082f;
+  color: white;
+}
+
+.blue-background .about-box {
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+.white-background {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+.white-background .about-box {
+  background-color: #f9f9f9;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #000000;
+}
+
+.white-background .about-description {
+  background-color: white;
+  color: black;
+  max-width: 80%;
+  margin: auto;
+  font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+  line-height: 1.6;
+  overflow: visible; /* remove internal scrolling */
+  max-height: none;  /* allow full height */
+}
+
+.about-box {
+  flex: 1 1 25%;
+  min-width: 200px;
+  padding: 15px;
+  border-radius: 10px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  text-align: center;
+}
+
+.about-box:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+.footer-bar {
+  height: 50px;
+  background-color: #000;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.footer-bar p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+.about-description {
+  max-width: 80%;
+  margin: auto;
+  font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+  max-height: 200px; /* limit height */
+  overflow-y: auto;  /* scroll inside */
+  padding-right: 10px; /* space for scrollbar */
+}
