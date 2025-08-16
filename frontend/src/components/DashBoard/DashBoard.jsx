@@ -50,7 +50,7 @@ const { points } = useContext(PointsContext);
         return;
       }
       const config = { headers: { Authorization: `Bearer ${userInfo.token}` } };
-      const { data } = await axios.get('/api/ecoactions', config);
+      const { data } = await axios.get('https://greenspark-backend-yuw8.onrender.com/api/ecoactions', config);
       setActions(data || []);
     } catch (error) {
       console.error('Error fetching eco actions:', error);
@@ -61,16 +61,16 @@ const { points } = useContext(PointsContext);
     try {
       if (!userInfo?.token) return;
 
-      const tipsRes = await axios.get('/api/ecotips');
+      const tipsRes = await axios.get('https://greenspark-backend-yuw8.onrender.com/api/ecotips');
       setEcoTips(tipsRes.data || []);
 
-      const lbRes = await axios.get('/api/leaderboard');
+      const lbRes = await axios.get('https://greenspark-backend-yuw8.onrender.com/api/leaderboard');
       setLeaderboard(lbRes.data || []);
 
-      const statsRes = await axios.get('/api/globalstats');
+      const statsRes = await axios.get('https://greenspark-backend-yuw8.onrender.com/api/globalstats');
       setGlobalStats(statsRes.data || { totalCO2: 0 });
 
-      const streakRes = await axios.get('/api/user/streak', {
+      const streakRes = await axios.get('https://greenspark-backend-yuw8.onrender.com/api/user/streak', {
         headers: { Authorization: `Bearer ${userInfo?.token}` }
       });
       setStreak(streakRes.data?.streak || 0);
@@ -87,7 +87,7 @@ const { points } = useContext(PointsContext);
         return;
       }
       const config = { headers: { Authorization: `Bearer ${userInfo.token}` } };
-      const { data } = await axios.get('/api/progress', config);
+      const { data } = await axios.get('https://greenspark-backend-yuw8.onrender.com/api/progress', config);
       setProgressData(data || []);
     } catch (error) {
       console.error('Error fetching progress data:', error);

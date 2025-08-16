@@ -42,7 +42,7 @@ const NewPostScreen = () => {
     }
 
     try {
-      await axios.post("/api/community", formData, {
+      await axios.post("https://greenspark-backend-yuw8.onrender.com/api/community", formData, {
         headers: { "Content-Type": "multipart/form-data" },
         withCredentials: true,
       });

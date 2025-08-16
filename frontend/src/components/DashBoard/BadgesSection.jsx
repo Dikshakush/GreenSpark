@@ -14,7 +14,7 @@ const BadgesSection = () => {
         const userInfo = JSON.parse(localStorage.getItem('userInfo'));
         const token = userInfo?.token || '';
 
-        const { data } = await axios.get('/api/users/profile', {
+        const { data } = await axios.get('https://greenspark-backend-yuw8.onrender.com/api/users/profile', {
           headers: {
             Authorization: `Bearer ${token}`,
           },

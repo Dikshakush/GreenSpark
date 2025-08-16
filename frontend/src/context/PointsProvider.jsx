@@ -22,7 +22,7 @@ export const PointsProvider = ({ children }) => {
   // Fetch points when component mounts
   useEffect(() => {
     axios
-      .get("/api/users/points", getAuthConfig())
+      .get("https://greenspark-backend-yuw8.onrender.com/api/users/points", getAuthConfig())
       .then((res) => setPoints(res.data.points || 0))
       .catch((err) => {
         console.error("Could not load points:", err.response?.data || err);
@@ -33,7 +33,7 @@ export const PointsProvider = ({ children }) => {
   const updatePoints = (newPoints) => {
     setPoints(newPoints);
     axios
-      .post("/api/users/points", { points: newPoints }, getAuthConfig())
+      .post("https://greenspark-backend-yuw8.onrender.com/api/users/points", { points: newPoints }, getAuthConfig())
       .catch((err) => {
         console.error("Could not update points:", err.response?.data || err);
       });

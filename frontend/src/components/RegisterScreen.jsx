@@ -42,7 +42,7 @@ const RegisterScreen = () => {
       };
 
       const { data } = await axios.post(
-        '/api/users/register',
+        'https://greenspark-backend-yuw8.onrender.com/api/users/register',
         { name, email, password },
         config
       );

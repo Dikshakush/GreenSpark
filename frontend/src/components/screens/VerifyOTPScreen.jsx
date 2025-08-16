@@ -38,7 +38,7 @@ const VerifyOTPScreen = () => {
       setLoading(true);
 
       const { data } = await axios.post(
-        '/api/users/verify-otp',
+        'https://greenspark-backend-yuw8.onrender.com/api/users/verify-otp',
         { email, otp },
         {
           headers: {

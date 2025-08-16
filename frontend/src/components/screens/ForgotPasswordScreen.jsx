@@ -35,7 +35,7 @@ const ForgotPasswordScreen = () => {
       setLoading(true);
 
       const { data } = await axios.post(
-        '/api/users/send-otp',
+        'https://greenspark-backend-yuw8.onrender.com/api/users/send-otp',
         { email },
         {
           headers: {

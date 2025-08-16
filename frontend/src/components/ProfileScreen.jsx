@@ -37,7 +37,7 @@ const ProfileScreen = () => {
 
     const fetchProfile = async () => {
       try {
-        const { data } = await axios.get('/api/users/profile', {
+        const { data } = await axios.get('https://greenspark-backend-yuw8.onrender.com/api/users/profile', {
           headers: {
             Authorization: `Bearer ${storedUserInfo.token}`,
           },
@@ -69,7 +69,7 @@ const ProfileScreen = () => {
       const storedUserInfo = JSON.parse(localStorage.getItem('userInfo'));
 
       const { data } = await axios.put(
-        '/api/users/profile',
+        'https://greenspark-backend-yuw8.onrender.com/api/users/profile',
         { name, email, password },
         {
           headers: {

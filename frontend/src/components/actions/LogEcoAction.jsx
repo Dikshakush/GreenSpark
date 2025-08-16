@@ -33,7 +33,7 @@ const LogEcoAction = () => {
     if (preview) URL.revokeObjectURL(preview);
     setFile(f || null);
     setPreview(f ? URL.createObjectURL(f) : null);
-    setError(''); // ✅ Clear error when selecting file
+    setError(''); //  Clear error when selecting file
   };
 
   const captureLocation = () => {
@@ -74,7 +74,7 @@ const LogEcoAction = () => {
       const formData = new FormData();
       formData.append('actionType', actionType);
       formData.append('notes', notes);
-      if (file) formData.append('proofImage', file); // ✅ Fixed field name
+      if (file) formData.append('proofImage', file); 
       if (lat) formData.append('lat', lat);
       if (lng) formData.append('lng', lng);
 
@@ -85,7 +85,7 @@ const LogEcoAction = () => {
         return;
       }
 
-      const res = await axios.post('/api/actions', formData, {
+      const res = await axios.post('https://greenspark-backend-yuw8.onrender.com/api/actions', formData, {
         headers: { 
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${token}`,
@@ -101,7 +101,7 @@ const LogEcoAction = () => {
         setNewBadges(res.data.newBadges);
         setShowBadgePopup(true);
 
-        // ✅ Wait 4s for popup, then navigate
+        //  Wait 4s for popup, then navigate
         setTimeout(() => {
           setShowBadgePopup(false);
           navigate('/dashboard');

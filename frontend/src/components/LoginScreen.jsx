@@ -28,7 +28,7 @@ const LoginScreen = () => {
       setError('');
 
       const { data } = await axios.post(
-        '/api/users/login',
+        'https://greenspark-backend-yuw8.onrender.com/api/users/login',
         { email, password },
         {
           headers: {

@@ -42,7 +42,7 @@ const ResetPasswordScreen = () => {
     try {
       setLoading(true);
       const { data } = await axios.post(
-        '/api/users/reset-password',
+        'https://greenspark-backend-yuw8.onrender.com/api/users/reset-password',
         { email, otp, password },
         {
           headers: {
