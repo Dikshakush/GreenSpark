@@ -36,8 +36,6 @@ const { points } = useContext(PointsContext);
   const [quote, setQuote] = useState("");
   const [showConfetti, setShowConfetti] = useState(false);
   const { updatePoints } = useContext(PointsContext);
-  const [ecoJourney, setEcoJourney] = useState(null);
-
 
   const [challenges, setChallenges] = useState({
     daily: { goal: "", progress: 0 },
@@ -62,27 +60,6 @@ const { points } = useContext(PointsContext);
     }
   }, [userInfo, updatePoints]);
 
-
-  const fetchEcoJourney = useCallback(async () => {
-  try {
-    if (!userInfo?.token) return;
-
-    const config = { headers: { Authorization: `Bearer ${userInfo.token}` } };
-    const { data } = await axios.get('https://greenspark-backend-yuw8.onrender.com/api/ecojourney', config);
-
-    setEcoJourney(data);
-
-    // Update points, streak, badges in context/state
-    updatePoints(data.points || 0);
-    setStreak(data.streak || 0);
-
-  } catch (error) {
-    console.error('Error fetching EcoJourney:', error);
-  }
-}, [userInfo, updatePoints]);
-
-
-
   const fetchExtraData = useCallback(async () => {
     try {
       if (!userInfo?.token) return;
@@ -93,7 +70,7 @@ const { points } = useContext(PointsContext);
       const lbRes = await axios.get('https://greenspark-backend-yuw8.onrender.com/api/leaderboard');
       setLeaderboard(lbRes.data || []);
 
-      const statsRes = await axios.get('https://greenspark-backend-yuw8.onrender.com/api/globalstats');
+      const statsRes = await axios.get('https://greenspark-backend-yuw8.onrender.com/api/stats');
       setGlobalStats(statsRes.data || { totalCO2: 0 });
 
       const streakRes = await axios.get('https://greenspark-backend-yuw8.onrender.com/api/user/streak', {
@@ -140,10 +117,9 @@ const { points } = useContext(PointsContext);
   useEffect(() => {
     document.body.setAttribute('data-theme', 'dark');
     fetchActions();
-  fetchExtraData();
-  fetchProgressData();
-  fetchEcoJourney(); 
-  }, [fetchActions, fetchExtraData, fetchProgressData , fetchEcoJourney]);
+    fetchExtraData();
+    fetchProgressData();
+  }, [fetchActions, fetchExtraData, fetchProgressData]);
 
     useEffect(() => {
     setChallenges(prev => ({
@@ -157,7 +133,6 @@ const { points } = useContext(PointsContext);
     fetchActions();
     fetchExtraData();
     fetchProgressData();
-    fetchEcoJourney(); // Refresh eco journey data
   };
 
   const handleLearnButtonClick = () => {
@@ -214,7 +189,7 @@ const { points } = useContext(PointsContext);
 
       <div className="welcome-card glass-card">
         <div>
-          <h4>Welcome back!, {userInfo?.name || 'Eco Hero'}! 🌱</h4>
+          <h4>Welcome back, {userInfo?.name || 'Eco Hero'}! 🌱</h4>
           <p>
             Level {level} • {streak || 0} Day Streak •{" "}
             {totalPoints > 0 ? `${totalPoints} Points` : "Nothing earned, start earning!"}
@@ -250,12 +225,7 @@ const { points } = useContext(PointsContext);
       </div>
 
       <div className="stats-row">
-        <StatsCards 
-        totalPoints={ecoJourney?.points || 0} 
-        co2Saved={ecoJourney?.points ? (ecoJourney.points * 0.5).toFixed(2) : 0} 
-        earnedBadges={ecoJourney?.earnedBadges || []} 
-        theme="dark" 
-        />
+        <StatsCards totalPoints={totalPoints} co2Saved={co2Saved} earnedBadges={[]} theme="dark" />
       </div>
 
       <div className="chart-row" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '2rem 0' }}>
@@ -273,24 +243,23 @@ const { points } = useContext(PointsContext);
           <Tabs defaultActiveKey="challenges" id="dashboard-tabs" className="glass-card custom-tabs">
             <Tab eventKey="challenges" title=" Challenges! 🏆">
               <div className="challenge-section">
-  {ecoJourney?.goals?.length > 0 ? (
-    ecoJourney.goals.map((goal, idx) => (
-      <div key={idx}>
-        <h5>{goal.type === 'daily' ? 'Daily Goal' : 'Long-Term Goal'}</h5>
-        <p>{goal.title || goal.description}</p>
-        <ProgressBar now={goal.completed ? 100 : 0} label={goal.completed ? 'Completed' : '0%'} />
-      </div>
-    ))
-  ) : (
-    <p>No goals yet. Add some to start your journey!</p>
-  )}
-
-  <h5>Community Challenge</h5>
-  <p>Save 1 ton of CO₂ together this month</p>
-  <ProgressBar now={0} label="0%" className="mb-3" />
-</div>
-</Tab>
-
+                {challenges.daily.goal ? (
+                  <>
+                    <h5>Daily Challenge</h5>
+                    <p>{challenges.daily.goal}</p>
+                    <ProgressBar now={challenges.daily.progress} label={`${challenges.daily.progress}%`} className="mb-3" />
+                    <h5>Weekly Challenge</h5>
+                    <p>{challenges.weekly.goal}</p>
+                    <ProgressBar now={challenges.weekly.progress} label={`${challenges.weekly.progress}%`} className="mb-3" />
+                  </>
+                ) : (
+                  <p>No challenges yet.</p>
+                )}
+                <h5>Community Challenge</h5>
+                <p>Save 1 ton of CO₂ together this month</p>
+                <ProgressBar now={0} label="0%" className="mb-3" />
+              </div>
+            </Tab>
 
             <Tab eventKey="stats" title=" Stats 📊">
               <div className="tab-content-black">
@@ -326,10 +295,7 @@ const { points } = useContext(PointsContext);
 
             <Tab eventKey="badges" title=" Badges 🏅">
               <div className="tab-content-black">
-                <BadgesSection 
-                ecoActions={actions} 
-                earnedBadges={ecoJourney?.earnedBadges || []} 
-                />
+                <BadgesSection ecoActions={actions} earnedBadges={[]} />
               </div>
             </Tab>
           </Tabs>
