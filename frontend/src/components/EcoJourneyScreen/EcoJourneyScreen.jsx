@@ -1,104 +1,120 @@
-
-
 // EcoJourneyScreen.jsx
-import React, { useEffect, useMemo, useState, useRef } from "react";
-import { Button, Card, Form, Modal, ProgressBar } from "react-bootstrap";
-import "../DashBoard/DashBoard.css";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Button, Card, Form, Modal, ProgressBar, Spinner } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import "../DashBoard/DashBoard.css";
 
-const STORAGE_KEY = "eco_journey_mock_v2";
 
-// ---- Initial UI state (frontend only; replace from backend later) ----
-const initialState = {
-  points: 0,
-  goals: [
-    { id: 1, text: "Use a reusable bottle for a week", type: "short", done: false },
-    { id: 2, text: "Reduce electricity usage by 10%", type: "long", done: false }
-  ],
-  pledges: [
-    { id: 1, user: "Community", text: "No plastic bags for a week", time: Date.now() - 86400000 }
-  ],
-  leaderboard: [
-    { name: "Alice", points: 350 },
-    { name: "Bob", points: 280 },
-    { name: "You", points: 0 },
-    { name: "Carmen", points: 110 },
-    { name: "Dee", points: 95 }
-  ],
-  streak: 0,                // as requested: show 0d
-  habitsBadges: [],         // as requested: “No badges yet”
-  unlockedLocations: ["Home"],
-  lastSpin: null
-};
+const API_BASE = import.meta.env.VITE_API_BASE || "";
+const STORAGE_KEY = "eco_journey_cache_v1";
 
+/**
+ * ====== API client with auth ======
+ */
+const api = axios.create({ baseURL: API_BASE });
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+/**
+ * ====== Local helpers / seeds ======
+ */
 const randomFrom = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
-const sampleTrivia = [
-  {
-    q: "What gas do trees absorb from the atmosphere?",
-    options: ["CO₂", "O₂", "N₂", "H₂"],
-    ans: "CO₂",
-    points: 10
-  },
-  {
-    q: "Which is a recyclable material?",
-    options: ["Glass", "Styrofoam", "Grease-laden pizza box", "Wet tissues"],
-    ans: "Glass",
-    points: 8
-  },
-  {
-    q: "What's an eco-friendly commute option?",
-    options: ["Car alone", "Bike", "Helicopter", "Single rider taxi"],
-    ans: "Bike",
-    points: 6
-  }
+const TRIVIA_SEED = [
+  { q: "What gas do trees absorb from the atmosphere?", options: ["CO₂", "O₂", "N₂", "H₂"], ans: "CO₂", points: 10 },
+  { q: "Which is a recyclable material?", options: ["Glass", "Styrofoam", "Grease-laden pizza box", "Wet tissues"], ans: "Glass", points: 8 },
+  { q: "What's an eco-friendly commute option?", options: ["Car alone", "Bike", "Helicopter", "Single rider taxi"], ans: "Bike", points: 6 },
 ];
 
-const challengesBank = [
+const CHALLENGES_SEED = [
   "Unplug chargers when not in use",
   "Use public transport for one trip",
   "Bring reusable cutlery for lunch",
   "Switch to LED bulbs for one room",
-  "Compost kitchen scraps for a week"
+  "Compost kitchen scraps for a week",
 ];
 
-const spinPrizes = [
-  { label: "5 pts", type: "points", value: 5 },
-  { label: "10 pts", type: "points", value: 10 },
-  { label: "Eco Tip", type: "tip", value: "Use a clothesline instead of dryer" },
-  { label: "Badge", type: "badge", value: "Spinner Novice" },
-  { label: "No win", type: "none", value: null }
-];
+const SPIN_FALLBACK = ["5 pts", "10 pts", "Eco Tip", "Badge", "No win"];
+
+const INITIAL = {
+  points: 0,
+  goals: [],
+  pledges: [],
+  leaderboard: [{ name: "You", points: 0 }],
+  streak: 0,
+  habitsBadges: [],
+  unlockedLocations: ["Home"],
+  lastSpin: null,
+};
 
 export default function EcoJourneyScreen() {
   const nav = useNavigate?.() || (() => {});
-  const [state, setState] = useState(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : initialState;
-    } catch {
-      return initialState;
-    }
-  });
+  const [state, setState] = useState(INITIAL);
 
-  // UI micro-state
+  // micro UI state
+  const [loading, setLoading] = useState(true);
   const [newGoalText, setNewGoalText] = useState("");
   const [pledgeText, setPledgeText] = useState("");
   const [showSpinModal, setShowSpinModal] = useState(false);
   const [spinResult, setSpinResult] = useState(null);
-  const [currentTrivia, setCurrentTrivia] = useState(() => randomFrom(sampleTrivia));
-  const [randomChallenge, setRandomChallenge] = useState(() => randomFrom(challengesBank));
-  const confettiContainerRef = useRef(null);
+  const [currentTrivia, setCurrentTrivia] = useState(() => randomFrom(TRIVIA_SEED));
+  const [randomChallenge, setRandomChallenge] = useState(() => randomFrom(CHALLENGES_SEED));
+  const confettiRef = useRef(null);
 
-  // persist locally (you’ll replace with backend calls later)
+  /**
+   * ====== Data boot ======
+   * GET /api/ecojourney/state
+   * GET /api/leaderboard (optional)
+   */
+  useEffect(() => {
+    const boot = async () => {
+      try {
+        setLoading(true);
+        const [{ data: s }, lbRes] = await Promise.all([
+          api.get("/api/ecojourney/state"),
+          api.get("/api/leaderboard").catch(() => ({ data: null })),
+        ]);
+
+        const merged = { ...INITIAL, ...(s || {}) };
+        if (lbRes?.data?.leaderboard?.length) {
+          merged.leaderboard = lbRes.data.leaderboard;
+        }
+
+        // Ensure "You" row mirrors points
+        const youIdx = merged.leaderboard.findIndex((u) => u.name === "You");
+        if (youIdx >= 0) merged.leaderboard[youIdx] = { ...merged.leaderboard[youIdx], points: merged.points || 0 };
+        else merged.leaderboard.push({ name: "You", points: merged.points || 0 });
+
+        setState(merged);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+      } catch (err) {
+        // fallback cache
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) setState(JSON.parse(raw));
+      
+        console.error("Boot load failed:", err?.response?.data || err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    boot();
+  }, []);
+
+  // keep a small cache
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [state]);
 
-  // small confetti
-  const launchConfetti = (count = 40) => {
-    const container = confettiContainerRef.current;
-    if (!container) return;
+  /**
+   * ====== Confetti micro effect ======
+   */
+  const confetti = (count = 36) => {
+    const host = confettiRef.current;
+    if (!host) return;
     const colors = ["#4facfe", "#00f2fe", "#6ee7b7", "#ffd166", "#ff8fab"];
     for (let i = 0; i < count; i++) {
       const s = document.createElement("span");
@@ -106,129 +122,196 @@ export default function EcoJourneyScreen() {
       s.style.left = `${Math.random() * 100}%`;
       s.style.background = colors[Math.floor(Math.random() * colors.length)];
       s.style.transform = `rotate(${Math.random() * 360}deg)`;
-      container.appendChild(s);
-      setTimeout(() => s.remove(), 2200 + Math.random() * 600);
+      host.appendChild(s);
+      setTimeout(() => s.remove(), 2000 + Math.random() * 700);
     }
   };
 
-  // ---- helper: ALWAYS keep points + leaderboard("You") in sync ----
-  const addPoints = (delta) => {
-    if (!delta) return;
-    setState((s) => {
-      const newPoints = (s.points || 0) + delta;
-      let lb = [...s.leaderboard];
-      const youIdx = lb.findIndex((u) => u.name === "You");
-      if (youIdx >= 0) {
-        lb[youIdx] = { ...lb[youIdx], points: newPoints };
-      } else {
-        lb = [...lb, { name: "You", points: newPoints }];
+  /**
+   * ====== Keep points + "You" leaderboard in sync ======
+   */
+  const syncPoints = (pts) => {
+    setState((prev) => {
+      const lb = [...(prev.leaderboard || [])];
+      const idx = lb.findIndex((u) => u.name === "You");
+      if (idx >= 0) lb[idx] = { ...lb[idx], points: pts };
+      else lb.push({ name: "You", points: pts });
+      return { ...prev, points: pts, leaderboard: lb };
+    });
+  };
+
+  /**
+   * ====== Actions wired to endpoints ======
+   */
+
+  // POST /api/ecojourney/goals
+  const addGoal = async (type = "short") => {
+    const text = newGoalText.trim();
+    if (!text) return;
+    try {
+      const { data } = await api.post("/api/ecojourney/goals", { text, type });
+      setState((s) => ({ ...s, goals: [data.goal, ...(s.goals || [])] }));
+      setNewGoalText("");
+    } catch (err) {
+      console.error("Add goal failed:", err?.response?.data || err.message);
+    }
+  };
+
+  // PATCH /api/ecojourney/goals/:id/toggle
+  const toggleGoal = async (id) => {
+    try {
+      const { data } = await api.patch(`/api/ecojourney/goals/${id}/toggle`);
+      // { goal, pointsAwarded?, totalPoints }
+      setState((s) => {
+        const goals = (s.goals || []).map((g) => (g._id === id || g.id === id ? { ...g, done: data.goal.done } : g));
+        return { ...s, goals };
+      });
+      if (typeof data.totalPoints === "number") {
+        syncPoints(data.totalPoints);
+        if (data.pointsAwarded > 0) confetti(28);
       }
-      return { ...s, points: newPoints, leaderboard: lb };
-    });
-  };
-
-  // actions
-  const addGoal = (type = "short") => {
-    if (!newGoalText.trim()) return;
-    const g = { id: Date.now(), text: newGoalText.trim(), type, done: false };
-    setState((s) => ({ ...s, goals: [g, ...s.goals] }));
-    setNewGoalText("");
-  };
-
-  const toggleGoal = (id) => {
-    setState((s) => {
-      const goals = s.goals.map((g) => (g.id === id ? { ...g, done: !g.done } : g));
-      return { ...s, goals };
-    });
-    // award points when marking as done (remove if backend differs)
-    const g = state.goals.find((x) => x.id === id);
-    const willBeDone = g && !g.done;
-    if (willBeDone) {
-      addPoints(15);
-      launchConfetti(28);
+    } catch (err) {
+      console.error("Toggle goal failed:", err?.response?.data || err.message);
     }
   };
 
-  const addPledge = () => {
-    if (!pledgeText.trim()) return;
-    const p = { id: Date.now(), user: "You", text: pledgeText.trim(), time: Date.now() };
-    setState((s) => ({ ...s, pledges: [p, ...s.pledges] }));
-    setPledgeText("");
+  // POST /api/ecojourney/pledges
+  const addPledge = async () => {
+    const text = pledgeText.trim();
+    if (!text) return;
+    try {
+      const { data } = await api.post("/api/ecojourney/pledges", { text });
+      setState((s) => ({ ...s, pledges: [data.pledge, ...(s.pledges || [])] }));
+      setPledgeText("");
+    } catch (err) {
+      console.error("Add pledge failed:", err?.response?.data || err.message);
+    }
   };
 
-  const spinWheel = () => {
-    const prize = randomFrom(spinPrizes);
-    setSpinResult(prize);
-    setShowSpinModal(true);
-    setTimeout(() => {
-      if (prize.type === "points") {
-        addPoints(prize.value);
-        launchConfetti(30);
-      } else if (prize.type === "badge") {
-        setState((s) => ({ ...s, habitsBadges: [...s.habitsBadges, prize.value], lastSpin: { prize, time: Date.now() } }));
-        launchConfetti(30);
-      } else {
-        setState((s) => ({ ...s, lastSpin: { prize, time: Date.now() } }));
+  // POST /api/spin/roll
+  const spinWheel = async () => {
+    try {
+      setShowSpinModal(true);
+      setSpinResult(null);
+      const { data } = await api.post("/api/spin/roll"); // { prize, pointsAfter, badge? }
+      setSpinResult(data.prize);
+      if (data.badge) {
+        setState((s) => ({ ...s, habitsBadges: [...(s.habitsBadges || []), data.badge] }));
+        confetti(30);
       }
-    }, 400);
-  };
-
-  const completeRandomChallenge = () => {
-    addPoints(8);
-    setState((s) => {
-      const newUnlocked = s.unlockedLocations.includes(randomChallenge)
-        ? s.unlockedLocations
-        : [...s.unlockedLocations, randomChallenge];
-      return { ...s, unlockedLocations: newUnlocked };
-    });
-    launchConfetti(24);
-    setRandomChallenge(randomFrom(challengesBank));
-  };
-
-  const answerTrivia = (option) => {
-    if (option === currentTrivia.ans) {
-      addPoints(currentTrivia.points);
-      launchConfetti(36);
+      if (typeof data.pointsAfter === "number") {
+        syncPoints(data.pointsAfter);
+        if (data.prize?.type === "points") confetti(30);
+      }
+      setState((s) => ({ ...s, lastSpin: { prize: data.prize, time: Date.now() } }));
+    } catch (err) {
+      console.error("Spin failed:", err?.response?.data || err.message);
+      setSpinResult({ label: randomFrom(SPIN_FALLBACK), type: "none", value: null });
     }
-    setTimeout(() => setCurrentTrivia(randomFrom(sampleTrivia)), 500);
   };
 
-  const logHabitAction = () => {
-    setState((s) => {
-      const newStreak = (s.streak || 0) + 1;
-      const badges = [...s.habitsBadges];
-      if (newStreak % 7 === 0) badges.push(`Streak ${newStreak} days`);
-      return { ...s, streak: newStreak, habitsBadges: badges };
-    });
-    launchConfetti(18);
+  // POST /api/ecojourney/challenges/complete
+  const completeRandomChallenge = async () => {
+    try {
+      const { data } = await api.post("/api/ecojourney/challenges/complete", { text: randomChallenge });
+      if (data?.unlockedLocations) {
+        setState((s) => ({ ...s, unlockedLocations: data.unlockedLocations }));
+      } else {
+        setState((s) => {
+          const list = new Set(s.unlockedLocations || []);
+          list.add(randomChallenge);
+          return { ...s, unlockedLocations: Array.from(list) };
+        });
+      }
+      if (typeof data?.pointsAfter === "number") syncPoints(data.pointsAfter);
+      confetti(24);
+      setRandomChallenge(randomFrom(CHALLENGES_SEED));
+    } catch (err) {
+      console.error("Challenge complete failed:", err?.response?.data || err.message);
+    }
   };
 
-  // derived
+  // POST /api/ecojourney/trivia/answer
+  const answerTrivia = async (option) => {
+    try {
+      const body = {
+        question: currentTrivia.q,
+        selected: option,
+        correct: currentTrivia.ans,
+        reward: currentTrivia.points,
+      };
+      const { data } = await api.post("/api/ecojourney/trivia/answer", body); // { correct, pointsAfter }
+      if (data?.correct) confetti(36);
+      if (typeof data?.pointsAfter === "number") {
+        syncPoints(data.pointsAfter);
+      } else if (option === currentTrivia.ans) {
+        syncPoints((state.points || 0) + (currentTrivia.points || 0));
+      }
+    } catch (err) {
+      console.error("Trivia failed:", err?.response?.data || err.message);
+      if (option === currentTrivia.ans) {
+        syncPoints((state.points || 0) + (currentTrivia.points || 0));
+        confetti(36);
+      }
+    } finally {
+      setTimeout(() => setCurrentTrivia(randomFrom(TRIVIA_SEED)), 500);
+    }
+  };
+
+  // POST /api/ecojourney/streak/log
+  const logHabitAction = async () => {
+    try {
+      const { data } = await api.post("/api/ecojourney/streak/log"); // { streak, badges?, pointsAfter? }
+      setState((s) => {
+        const badges = data.badges || s.habitsBadges || [];
+        return { ...s, streak: data.streak ?? (s.streak || 0), habitsBadges: badges };
+      });
+      if (typeof data?.pointsAfter === "number") syncPoints(data.pointsAfter);
+      confetti(18);
+    } catch (err) {
+      console.error("Streak log failed:", err?.response?.data || err.message);
+      setState((s) => {
+        const newStreak = (s.streak || 0) + 1;
+        const badges = [...(s.habitsBadges || [])];
+        if (newStreak % 7 === 0) badges.push(`Streak ${newStreak} days`);
+        return { ...s, streak: newStreak, habitsBadges: badges };
+      });
+      confetti(18);
+    }
+  };
+
+  /**
+   * ====== Derived leaderboard (top 5 incl. You) ======
+   */
   const top5 = useMemo(() => {
-    const sorted = [...state.leaderboard].sort((a, b) => b.points - a.points).slice(0, 5);
-    if (!sorted.some((u) => u.name === "You")) {
-      const you = state.leaderboard.find((u) => u.name === "You") || { name: "You", points: state.points };
-      sorted.push(you);
-    }
+    const sorted = [...(state.leaderboard || [])].sort((a, b) => (b.points || 0) - (a.points || 0)).slice(0, 5);
+    if (!sorted.some((u) => u.name === "You")) sorted.push({ name: "You", points: state.points || 0 });
     return sorted;
   }, [state.leaderboard, state.points]);
 
   return (
-    <div className="dashboard-screen dark" style={{ padding: "2rem", gap: "1.25rem" }}>
+    <div className="dashboard-screen dark" style={{ padding: "2rem", gap: "1.25rem", opacity: loading ? 0.75 : 1 }}>
       {/* Confetti layer */}
-      <div ref={confettiContainerRef} style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 2000 }} />
+      <div ref={confettiRef} style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 2000 }} />
 
       {/* Header */}
       <div className="dashboard-header glass-card" style={{ alignItems: "center" }}>
         <div>
-          <h2 className="dashboard-title"> Eco Journey!🌿</h2>
+          <h2 className="dashboard-title">Eco Journey! 🌿</h2>
           <p className="dashboard-sub">Your green path — goals, challenges, and rewards</p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <Button variant="outline-light" onClick={() => nav("/dashBoard")}>← Back to Dashboard</Button>
-          <Button variant="primary" onClick={() => { /* invite hook later */ }}>Invite Friends</Button>
+          <Button variant="primary" onClick={() => { /* future invite hook */ }}>Invite Friends</Button>
         </div>
       </div>
+
+      {/* Loading banner */}
+      {loading && (
+        <div className="glass-card" style={{ padding: 12, display: "flex", alignItems: "center", gap: 10 }}>
+          <Spinner size="sm" /> <span style={{ color: "#9fb4c9" }}>Loading your eco journey…</span>
+        </div>
+      )}
 
       {/* Top row: Goals / Streak / Leaderboard */}
       <div className="eco-grid-row top">
@@ -236,7 +319,7 @@ export default function EcoJourneyScreen() {
         <Card className="glass-card" style={{ padding: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h4>Eco Goals</h4>
-            <small style={{ color: "#9fb4c9" }}>{state.goals.length} goals</small>
+            <small style={{ color: "#9fb4c9" }}>{(state.goals || []).length} goals</small>
           </div>
 
           <div style={{ marginTop: 12 }}>
@@ -253,19 +336,26 @@ export default function EcoJourneyScreen() {
           </div>
 
           <div style={{ marginTop: 12 }}>
-            {state.goals.map((g) => (
-              <div key={g.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0" }}>
-                <div>
-                  <div style={{ fontWeight: 600, color: g.done ? "#9fb4c9" : "#fff" }}>{g.text}</div>
-                  <small style={{ color: "#9fb4c9" }}>{g.type} goal</small>
-                </div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <Button size="sm" variant={g.done ? "outline-light" : "success"} onClick={() => toggleGoal(g.id)}>
-                    {g.done ? "Undo" : "Complete"}
-                  </Button>
-                </div>
-              </div>
-            ))}
+            {(state.goals || []).length ? (
+              (state.goals || []).map((g) => {
+                const id = g._id || g.id;
+                return (
+                  <div key={id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0" }}>
+                    <div>
+                      <div style={{ fontWeight: 600, color: g.done ? "#9fb4c9" : "#fff" }}>{g.text}</div>
+                      <small style={{ color: "#9fb4c9" }}>{g.type} goal</small>
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <Button size="sm" variant={g.done ? "outline-light" : "success"} onClick={() => toggleGoal(id)}>
+                        {g.done ? "Undo" : "Complete"}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <small style={{ color: "#9fb4c9" }}>No goals yet — add your first one above.</small>
+            )}
           </div>
         </Card>
 
@@ -275,23 +365,33 @@ export default function EcoJourneyScreen() {
           <p style={{ marginTop: 6, color: "#9fb4c9" }}>Consistent eco actions earn badges</p>
           <div style={{ marginTop: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ fontSize: 28, fontWeight: 700 }}>{state.streak}d</div>
+              <div style={{ fontSize: 28, fontWeight: 700 }}>{state.streak || 0}d</div>
               <div style={{ flex: 1 }}>
-                <ProgressBar now={Math.min((state.streak % 7) * 14.28, 100)} />
+                <ProgressBar now={Math.min(((state.streak || 0) % 7) * 14.28, 100)} />
                 <small style={{ color: "#9fb4c9" }}>Progress to next weekly badge</small>
               </div>
             </div>
             <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <Button variant="outline-light" size="sm" onClick={logHabitAction}>Log Eco Action</Button>
-              <Button variant="primary" size="sm" onClick={() => { setState((s) => ({ ...s, streak: 0 })); }}>Reset Streak</Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setState((s) => ({ ...s, streak: 0 }))}
+              >
+                Reset Streak
+              </Button>
             </div>
 
             <div style={{ marginTop: 12 }}>
               <h6>Badges</h6>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {state.habitsBadges.length ? state.habitsBadges.map((b, i) => (
-                  <div key={i} className="glass-card" style={{ padding: "6px 8px", background: "rgba(255,255,255,0.03)" }}>{b}</div>
-                )) : <small style={{ color: "#9fb4c9" }}>No badges yet</small>}
+                {(state.habitsBadges || []).length ? (
+                  (state.habitsBadges || []).map((b, i) => (
+                    <div key={i} className="glass-card" style={{ padding: "6px 8px", background: "rgba(255,255,255,0.03)" }}>{b}</div>
+                  ))
+                ) : (
+                  <small style={{ color: "#9fb4c9" }}>No badges yet</small>
+                )}
               </div>
             </div>
           </div>
@@ -312,7 +412,7 @@ export default function EcoJourneyScreen() {
 
       {/* Middle row: Map / Spin / Random Challenge */}
       <div className="eco-grid-row middle">
-        {/* Achievements Map */}
+        {/* Map */}
         <Card className="glass-card" style={{ padding: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h4>Green Achievements Map</h4>
@@ -323,7 +423,7 @@ export default function EcoJourneyScreen() {
               <rect x="10" y="20" width="580" height="100" rx="12" fill="rgba(255,255,255,0.02)" />
               {["Home", "Park", "Market", "Campus", "Forest"].map((loc, i) => {
                 const x = 40 + i * 110;
-                const unlocked = state.unlockedLocations.includes(loc);
+                const unlocked = (state.unlockedLocations || []).includes(loc);
                 return (
                   <g key={loc} transform={`translate(${x},70)`}>
                     <circle cx={0} cy={0} r={24} fill={unlocked ? "#4facfe" : "#2b3942"} stroke={unlocked ? "#e6f7ff" : "#1a2430"} strokeWidth={3} />
@@ -333,12 +433,12 @@ export default function EcoJourneyScreen() {
               })}
             </svg>
             <div style={{ marginTop: 10 }}>
-              <small style={{ color: "#9fb4c9" }}>Unlocked: {state.unlockedLocations.join(", ")}</small>
+              <small style={{ color: "#9fb4c9" }}>Unlocked: {(state.unlockedLocations || []).join(", ")}</small>
             </div>
           </div>
         </Card>
 
-        {/* Spin-to-Win */}
+        {/* Spin */}
         <Card className="glass-card" style={{ padding: 16, textAlign: "center" }}>
           <h5>Spin to Win</h5>
           <p style={{ color: "#9fb4c9" }}>Try your luck — you might win bonus points or a badge!</p>
@@ -352,7 +452,7 @@ export default function EcoJourneyScreen() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.25)"
+                boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
               }}
             >
               <div
@@ -365,7 +465,7 @@ export default function EcoJourneyScreen() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontWeight: 700
+                  fontWeight: 700,
                 }}
               >
                 Wheel
@@ -386,7 +486,7 @@ export default function EcoJourneyScreen() {
                   {spinResult.type === "none" && <p>Better luck next time!</p>}
                 </>
               ) : (
-                <p>Spinning...</p>
+                <p>Spinning…</p>
               )}
               <div style={{ marginTop: 12 }}>
                 <Button variant="secondary" onClick={() => setShowSpinModal(false)}>Close</Button>
@@ -395,35 +495,39 @@ export default function EcoJourneyScreen() {
           </Modal>
         </Card>
 
-        {/* Random Challenge / Pledge */}
+        {/* Random Challenge + Pledge */}
         <Card className="glass-card" style={{ padding: 16 }}>
           <h5>Random Challenge</h5>
           <p style={{ color: "#9fb4c9" }}>{randomChallenge}</p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <Button variant="success" onClick={completeRandomChallenge}>Complete (+8 pts)</Button>
-            <Button variant="outline-light" onClick={() => setRandomChallenge(randomFrom(challengesBank))}>New</Button>
+            <Button variant="success" onClick={completeRandomChallenge}>Complete (+pts)</Button>
+            <Button variant="outline-light" onClick={() => setRandomChallenge(randomFrom(CHALLENGES_SEED))}>New</Button>
           </div>
 
           <hr style={{ borderColor: "rgba(255,255,255,0.04)" }} />
 
           <h6>Eco Pledge Wall</h6>
-          <Form.Control size="sm" placeholder="I pledge to..." value={pledgeText} onChange={(e) => setPledgeText(e.target.value)} />
+          <Form.Control size="sm" placeholder="I pledge to…" value={pledgeText} onChange={(e) => setPledgeText(e.target.value)} />
           <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
             <Button size="sm" variant="primary" onClick={addPledge}>Pledge</Button>
             <Button size="sm" variant="outline-light" onClick={() => setPledgeText("")}>Clear</Button>
           </div>
           <div style={{ marginTop: 10, maxHeight: 110, overflow: "auto" }}>
-            {state.pledges.map((p) => (
-              <div key={p.id} style={{ padding: "8px 0", borderBottom: "1px dashed rgba(255,255,255,0.02)" }}>
-                <div style={{ fontWeight: 600 }}>{p.user}</div>
-                <div style={{ color: "#9fb4c9" }}>{p.text}</div>
-              </div>
-            ))}
+            {(state.pledges || []).length ? (
+              (state.pledges || []).map((p) => (
+                <div key={p._id || p.id} style={{ padding: "8px 0", borderBottom: "1px dashed rgba(255,255,255,0.04)" }}>
+                  <div style={{ fontWeight: 600 }}>{p.user || "You"}</div>
+                  <div style={{ color: "#9fb4c9" }}>{p.text}</div>
+                </div>
+              ))
+            ) : (
+              <small style={{ color: "#9fb4c9" }}>No pledges yet — make your first pledge above.</small>
+            )}
           </div>
         </Card>
       </div>
 
-      {/* Lower row: Trivia / Summary */}
+      {/* Bottom row: Trivia / Summary */}
       <div className="eco-grid-row bottom">
         {/* Trivia */}
         <Card className="glass-card" style={{ padding: 16 }}>
@@ -445,27 +549,33 @@ export default function EcoJourneyScreen() {
           <div style={{ marginTop: 8 }}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <div>Total Points</div>
-              <div style={{ fontWeight: 700, color: "#4fc3ff" }}>{state.points} pts</div>
+              <div style={{ fontWeight: 700, color: "#4fc3ff" }}>{state.points || 0} pts</div>
             </div>
             <div style={{ marginTop: 8, display: "flex", justifyContent: "space-between" }}>
               <div>CO₂ Saved (est.)</div>
-              <div style={{ fontWeight: 700 }}>{(state.points * 0.5).toFixed(1)} kg</div>
+              <div style={{ fontWeight: 700 }}>{((state.points || 0) * 0.5).toFixed(1)} kg</div>
             </div>
 
             <hr style={{ borderColor: "rgba(255,255,255,0.04)" }} />
             <h6>Achievements</h6>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-              {state.goals.filter((g) => g.done).length
-                ? state.goals.filter((g) => g.done).map((g) => (
-                    <div key={g.id} className="glass-card" style={{ padding: "6px 8px" }}>{g.text}</div>
+              {(state.goals || []).filter((g) => g.done).length ? (
+                (state.goals || [])
+                  .filter((g) => g.done)
+                  .map((g) => (
+                    <div key={g._id || g.id} className="glass-card" style={{ padding: "6px 8px" }}>
+                      {g.text}
+                    </div>
                   ))
-                : <small style={{ color: "#9fb4c9" }}>No achievements yet</small>}
+              ) : (
+                <small style={{ color: "#9fb4c9" }}>No achievements yet</small>
+              )}
             </div>
           </div>
         </Card>
       </div>
 
-      {/* tiny helpers: confetti + responsive grid that respects your theme */}
+      {/* Inline tiny helpers: confetti + responsive grid */}
       <style jsx="true">{`
         .mini-confetti {
           position: absolute;
@@ -482,43 +592,20 @@ export default function EcoJourneyScreen() {
           100% { transform: translateY(110vh) rotate(600deg); opacity: 0; }
         }
 
-        /* Responsive rows that keep your DashBoard.css glass theme */
-        .eco-grid-row {
-          display: grid;
-          gap: 16px;
-        }
-        .eco-grid-row.top {
-          grid-template-columns: 1fr 260px 260px;
-        }
-        .eco-grid-row.middle {
-          grid-template-columns: 1fr 360px 320px;
-        }
-        .eco-grid-row.bottom {
-          grid-template-columns: 1fr 360px;
-        }
+        .eco-grid-row { display: grid; gap: 16px; }
+        .eco-grid-row.top { grid-template-columns: 1fr 260px 260px; }
+        .eco-grid-row.middle { grid-template-columns: 1fr 360px 320px; }
+        .eco-grid-row.bottom { grid-template-columns: 1fr 360px; }
 
-        /* Breakpoints to keep layout consistent with your screenshots */
         @media (max-width: 1200px) {
-          .eco-grid-row.top {
-            grid-template-columns: 1fr 1fr;
-          }
-          .eco-grid-row.middle {
-            grid-template-columns: 1fr 1fr;
-          }
-          .eco-grid-row.bottom {
-            grid-template-columns: 1fr 1fr;
-          }
+          .eco-grid-row.top { grid-template-columns: 1fr 1fr; }
+          .eco-grid-row.middle { grid-template-columns: 1fr 1fr; }
+          .eco-grid-row.bottom { grid-template-columns: 1fr 1fr; }
         }
         @media (max-width: 860px) {
-          .eco-grid-row.top,
-          .eco-grid-row.middle,
-          .eco-grid-row.bottom {
-            grid-template-columns: 1fr;
-          }
+          .eco-grid-row.top, .eco-grid-row.middle, .eco-grid-row.bottom { grid-template-columns: 1fr; }
         }
       `}</style>
     </div>
   );
-}   
-
-
+}
