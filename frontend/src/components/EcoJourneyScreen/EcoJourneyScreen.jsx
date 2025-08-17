@@ -1,54 +1,101 @@
 
+
 // EcoJourneyScreen.jsx
-import React, { useEffect, useMemo, useState, useRef, useContext } from "react";
-import { PointsContext } from "../../context/PointsContext";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { Button, Card, Form, Modal, ProgressBar } from "react-bootstrap";
 import "../DashBoard/DashBoard.css";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 
-const getAuthConfig = () => {
-  const token = localStorage.getItem("token");
-  return token
-    ? { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
-    : {};
+const STORAGE_KEY = "eco_journey_mock_v2";
+
+// ---- Initial UI state (frontend only; replace from backend later) ----
+const initialState = {
+  points: 0,
+  goals: [
+    { id: 1, text: "Use a reusable bottle for a week", type: "short", done: false },
+    { id: 2, text: "Reduce electricity usage by 10%", type: "long", done: false }
+  ],
+  pledges: [
+    { id: 1, user: "Community", text: "No plastic bags for a week", time: Date.now() - 86400000 }
+  ],
+  leaderboard: [
+    { name: "Alice", points: 350 },
+    { name: "Bob", points: 280 },
+    { name: "You", points: 0 },
+    { name: "Carmen", points: 110 },
+    { name: "Dee", points: 95 }
+  ],
+  streak: 0,                // as requested: show 0d
+  habitsBadges: [],         // as requested: “No badges yet”
+  unlockedLocations: ["Home"],
+  lastSpin: null
 };
 
-// Helper for random challenge
-const randomFrom = (arr) => (arr && arr.length ? arr[Math.floor(Math.random() * arr.length)] : "");
+const randomFrom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+const sampleTrivia = [
+  {
+    q: "What gas do trees absorb from the atmosphere?",
+    options: ["CO₂", "O₂", "N₂", "H₂"],
+    ans: "CO₂",
+    points: 10
+  },
+  {
+    q: "Which is a recyclable material?",
+    options: ["Glass", "Styrofoam", "Grease-laden pizza box", "Wet tissues"],
+    ans: "Glass",
+    points: 8
+  },
+  {
+    q: "What's an eco-friendly commute option?",
+    options: ["Car alone", "Bike", "Helicopter", "Single rider taxi"],
+    ans: "Bike",
+    points: 6
+  }
+];
+
+const challengesBank = [
+  "Unplug chargers when not in use",
+  "Use public transport for one trip",
+  "Bring reusable cutlery for lunch",
+  "Switch to LED bulbs for one room",
+  "Compost kitchen scraps for a week"
+];
+
+const spinPrizes = [
+  { label: "5 pts", type: "points", value: 5 },
+  { label: "10 pts", type: "points", value: 10 },
+  { label: "Eco Tip", type: "tip", value: "Use a clothesline instead of dryer" },
+  { label: "Badge", type: "badge", value: "Spinner Novice" },
+  { label: "No win", type: "none", value: null }
+];
 
 export default function EcoJourneyScreen() {
-  const { points: _points, updatePoints } = useContext(PointsContext);
-
-  const nav = useNavigate();
-  const [state, setState] = useState({
-    points: 0,
-    goals: [],
-    pledges: [],
-    leaderboard: [],
-    streak: 0,
-    habitsBadges: [],
-    unlockedLocations: [],
-    lastSpin: null,
+  const nav = useNavigate?.() || (() => {});
+  const [state, setState] = useState(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : initialState;
+    } catch {
+      return initialState;
+    }
   });
 
+  // UI micro-state
   const [newGoalText, setNewGoalText] = useState("");
   const [pledgeText, setPledgeText] = useState("");
   const [showSpinModal, setShowSpinModal] = useState(false);
   const [spinResult, setSpinResult] = useState(null);
-  const [randomChallenge, setRandomChallenge] = useState(""); 
-  const [currentTrivia, setCurrentTrivia] = useState({
-  options: [],
-  q: "",
-  correctAnswer: "",
-  points: 0,
-  _id: "",
-});
-
-  const [challengesBank, setChallengesBank] = useState([]);
+  const [currentTrivia, setCurrentTrivia] = useState(() => randomFrom(sampleTrivia));
+  const [randomChallenge, setRandomChallenge] = useState(() => randomFrom(challengesBank));
   const confettiContainerRef = useRef(null);
 
-  // ---- Helper: confetti ----
+  // persist locally (you’ll replace with backend calls later)
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }, [state]);
+
+  // small confetti
   const launchConfetti = (count = 40) => {
     const container = confettiContainerRef.current;
     if (!container) return;
@@ -64,254 +111,99 @@ export default function EcoJourneyScreen() {
     }
   };
 
-  // ---- Load backend data on mount ----
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Get points
-        const pointsRes = await axios.get(
-          "https://greenspark-backend-yuw8.onrender.com/api/users/points",
-          getAuthConfig()
-        );
-
-        // Get EcoJourney (goals, pledges, streak, badges, unlocked locations, last spin)
-        const journeyRes = await axios.get(
-          "https://greenspark-backend-yuw8.onrender.com/api/ecojourney",
-          getAuthConfig()
-        );
-
-        const { goals, pledges, streak, habitsBadges, unlockedLocations, lastSpin } =
-          journeyRes.data;
-
-        // Get leaderboard
-        const leaderboardRes = await axios.get(
-          "https://greenspark-backend-yuw8.onrender.com/api/leaderboard?period=all",
-          getAuthConfig()
-        );
-
-        // fetch challenges
-         const challengesRes = await axios.get(
-        "https://greenspark-backend-yuw8.onrender.com/api/ecojourney/challenges",
-        getAuthConfig()
-      );
-      setChallengesBank(challengesRes.data.challenges || []);
-
-        setState({
-          points: pointsRes.data.points || 0,
-          goals,
-          pledges,
-          leaderboard: leaderboardRes.data.leaderboard || [],
-          streak: streak || 0,
-          habitsBadges: habitsBadges || [],
-          unlockedLocations: unlockedLocations || ["Home"],
-          lastSpin: lastSpin || null,
-        });
-
-        updatePoints(pointsRes.data.points || 0);
-      } catch (err) {
-        console.error("Error fetching EcoJourney data:", err);
-      }
-    };
-
-    fetchData();
-  }, [updatePoints]);
-
-  // ---- Points update helper ----
-  const addPoints = async (delta) => {
+  // ---- helper: ALWAYS keep points + leaderboard("You") in sync ----
+  const addPoints = (delta) => {
     if (!delta) return;
-    const newPoints = state.points + delta;
-
-    try {
-      await axios.post(
-        "https://greenspark-backend-yuw8.onrender.com/api/users/points",
-        { points: newPoints },
-        getAuthConfig()
-      );
-    } catch (err) {
-      console.error("Failed to add points", err);
-    }
-
-    updatePoints(newPoints);
     setState((s) => {
-      const lb = [...s.leaderboard];
+      const newPoints = (s.points || 0) + delta;
+      let lb = [...s.leaderboard];
       const youIdx = lb.findIndex((u) => u.name === "You");
       if (youIdx >= 0) {
         lb[youIdx] = { ...lb[youIdx], points: newPoints };
       } else {
-        lb.push({ name: "You", points: newPoints });
+        lb = [...lb, { name: "You", points: newPoints }];
       }
-      return { ...s, leaderboard: lb, points: newPoints };
+      return { ...s, points: newPoints, leaderboard: lb };
     });
   };
 
-  // ---- Add new goal ----
-  const addGoal = async (type = "short") => {
+  // actions
+  const addGoal = (type = "short") => {
     if (!newGoalText.trim()) return;
-    try {
-      const res = await axios.post(
-        "https://greenspark-backend-yuw8.onrender.com/api/goals",
-        { text: newGoalText.trim(), type },
-        getAuthConfig()
-      );
-      const createdGoal = res.data;
-      setState((s) => ({ ...s, goals: [createdGoal, ...s.goals] }));
-      setNewGoalText("");
-    } catch (err) {
-      console.error("Failed to add goal:", err.response?.data || err);
-    }
+    const g = { id: Date.now(), text: newGoalText.trim(), type, done: false };
+    setState((s) => ({ ...s, goals: [g, ...s.goals] }));
+    setNewGoalText("");
   };
 
-  // ---- Toggle goal completion ----
-  const toggleGoal = async (id) => {
-    const g = state.goals.find((x) => x._id === id || x.id === id);
+  const toggleGoal = (id) => {
+    setState((s) => {
+      const goals = s.goals.map((g) => (g.id === id ? { ...g, done: !g.done } : g));
+      return { ...s, goals };
+    });
+    // award points when marking as done (remove if backend differs)
+    const g = state.goals.find((x) => x.id === id);
     const willBeDone = g && !g.done;
-
     if (willBeDone) {
       addPoints(15);
       launchConfetti(28);
     }
-
-    setState((s) => {
-      const goals = s.goals?.map((g) => (g._id === id || g.id === id ? { ...g, done: !g.done } : g));
-      return { ...s, goals };
-    });
-
-    try {
-      await axios.post(
-        `https://greenspark-backend-yuw8.onrender.com/api/goals/${id}/toggle`,
-        {},
-        getAuthConfig()
-      );
-    } catch (err) {
-      console.error("Failed to toggle goal:", err.response?.data || err);
-    }
   };
 
-  // ---- Complete a random challenge ----
-  const completeRandomChallenge = async () => {
-    try {
-      await axios.post(
-        "https://greenspark-backend-yuw8.onrender.com/api/ecojourney/challenges/complete",
-        { challengeId: randomChallenge },
-        getAuthConfig()
-      );
-
-      addPoints(8);
-
-      setState((s) => {
-        const newUnlocked = s.unlockedLocations.includes(randomChallenge)
-          ? s.unlockedLocations
-          : [...s.unlockedLocations, randomChallenge];
-        return { ...s, unlockedLocations: newUnlocked };
-      });
-
-      launchConfetti(24);
-      setRandomChallenge(randomFrom(challengesBank)?._id || "");
-    } catch (err) {
-      console.error("Failed to complete challenge:", err.response?.data || err);
-    }
+  const addPledge = () => {
+    if (!pledgeText.trim()) return;
+    const p = { id: Date.now(), user: "You", text: pledgeText.trim(), time: Date.now() };
+    setState((s) => ({ ...s, pledges: [p, ...s.pledges] }));
+    setPledgeText("");
   };
 
-  // ---- Answer trivia question ----
-  const answerTrivia = async (option) => {
-    try {
-      let earnedPoints = 0;
-      if (option === currentTrivia.correctAnswer) {
-        earnedPoints = currentTrivia.points;
-        addPoints(earnedPoints);
-        launchConfetti(36);
-      }
-
-      await axios.post(
-        `https://greenspark-backend-yuw8.onrender.com/api/ecojourney/trivia/${currentTrivia._id}`,
-        { answer: option },
-        getAuthConfig()
-      );
-
-      // fetch next trivia from backend
-      const nextTriviaRes = await axios.get(
-        "https://greenspark-backend-yuw8.onrender.com/api/ecojourney/trivia/next",
-        getAuthConfig()
-      );
-      setCurrentTrivia(nextTriviaRes.data);
-    } catch (err) {
-      console.error("Failed to answer trivia:", err.response?.data || err);
-    }
-  };
-
-  // ---- Log habit action ----
-  const logHabitAction = async () => {
-    try {
-      await axios.post(
-        "https://greenspark-backend-yuw8.onrender.com/api/actions",
-        { actionType: "habit", description: "Daily habit logged", points: 5 },
-        getAuthConfig()
-      );
-
-      const streakRes = await axios.post(
-        "https://greenspark-backend-yuw8.onrender.com/api/ecojourney/streak",
-        {},
-        getAuthConfig()
-      );
-
-      const newStreak = streakRes.data.streak || 0;
-
-      setState((s) => ({ ...s, streak: newStreak }));
-
-      addPoints(5);
-      launchConfetti(18);
-    } catch (err) {
-      console.error("Failed to log habit action:", err.response?.data || err);
-    }
-  };
-
-  // ---- Spin wheel ----
-  const spinWheel = async () => {
-    try {
-      const res = await axios.post(
-        "https://greenspark-backend-yuw8.onrender.com/api/spin",
-        {},
-        getAuthConfig()
-      );
-      setSpinResult(res.data.prize || res.data);
-      setShowSpinModal(true);
-
-      // Update points/badges
-      if (res.data.prize?.type === "points") {
-        addPoints(res.data.prize.value);
+  const spinWheel = () => {
+    const prize = randomFrom(spinPrizes);
+    setSpinResult(prize);
+    setShowSpinModal(true);
+    setTimeout(() => {
+      if (prize.type === "points") {
+        addPoints(prize.value);
         launchConfetti(30);
-      } else if (res.data.prize?.type === "badge") {
-        setState((s) => ({
-          ...s,
-          habitsBadges: [...s.habitsBadges, res.data.prize.value],
-          lastSpin: { prize: res.data.prize, time: Date.now() },
-        }));
+      } else if (prize.type === "badge") {
+        setState((s) => ({ ...s, habitsBadges: [...s.habitsBadges, prize.value], lastSpin: { prize, time: Date.now() } }));
         launchConfetti(30);
       } else {
-        setState((s) => ({ ...s, lastSpin: { prize: res.data.prize, time: Date.now() } }));
+        setState((s) => ({ ...s, lastSpin: { prize, time: Date.now() } }));
       }
-    } catch (err) {
-      console.error("Failed to spin wheel:", err.response?.data || err);
-    }
+    }, 400);
   };
 
-  // ---- Add pledge ----
-  const addPledge = async () => {
-    if (!pledgeText.trim()) return;
-    try {
-      const res = await axios.post(
-        "https://greenspark-backend-yuw8.onrender.com/api/ecojourney/pledges",
-        { text: pledgeText.trim() },
-        getAuthConfig()
-      );
-      setState((s) => ({ ...s, pledges: [res.data, ...s.pledges] }));
-      setPledgeText("");
-    } catch (err) {
-      console.error("Failed to add pledge:", err.response?.data || err);
-    }
+  const completeRandomChallenge = () => {
+    addPoints(8);
+    setState((s) => {
+      const newUnlocked = s.unlockedLocations.includes(randomChallenge)
+        ? s.unlockedLocations
+        : [...s.unlockedLocations, randomChallenge];
+      return { ...s, unlockedLocations: newUnlocked };
+    });
+    launchConfetti(24);
+    setRandomChallenge(randomFrom(challengesBank));
   };
 
-  // ---- UI Derived: top 5 leaderboard ----
+  const answerTrivia = (option) => {
+    if (option === currentTrivia.ans) {
+      addPoints(currentTrivia.points);
+      launchConfetti(36);
+    }
+    setTimeout(() => setCurrentTrivia(randomFrom(sampleTrivia)), 500);
+  };
+
+  const logHabitAction = () => {
+    setState((s) => {
+      const newStreak = (s.streak || 0) + 1;
+      const badges = [...s.habitsBadges];
+      if (newStreak % 7 === 0) badges.push(`Streak ${newStreak} days`);
+      return { ...s, streak: newStreak, habitsBadges: badges };
+    });
+    launchConfetti(18);
+  };
+
+  // derived
   const top5 = useMemo(() => {
     const sorted = [...state.leaderboard].sort((a, b) => b.points - a.points).slice(0, 5);
     if (!sorted.some((u) => u.name === "You")) {
@@ -319,7 +211,7 @@ export default function EcoJourneyScreen() {
       sorted.push(you);
     }
     return sorted;
-  }, [state.leaderboard, state.points]);   
+  }, [state.leaderboard, state.points]);
 
   return (
     <div className="dashboard-screen dark" style={{ padding: "2rem", gap: "1.25rem" }}>
@@ -333,7 +225,7 @@ export default function EcoJourneyScreen() {
           <p className="dashboard-sub">Your green path — goals, challenges, and rewards</p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <Button variant="outline-light" onClick={() => nav("/dashboard")}>← Back to Dashboard</Button>
+          <Button variant="outline-light" onClick={() => nav("/dashBoard")}>← Back to Dashboard</Button>
           <Button variant="primary" onClick={() => { /* invite hook later */ }}>Invite Friends</Button>
         </div>
       </div>
@@ -418,9 +310,7 @@ export default function EcoJourneyScreen() {
         </Card>
       </div>
 
-
       {/* Middle row: Map / Spin / Random Challenge */}
-
       <div className="eco-grid-row middle">
         {/* Achievements Map */}
         <Card className="glass-card" style={{ padding: 16 }}>
@@ -523,7 +413,7 @@ export default function EcoJourneyScreen() {
             <Button size="sm" variant="outline-light" onClick={() => setPledgeText("")}>Clear</Button>
           </div>
           <div style={{ marginTop: 10, maxHeight: 110, overflow: "auto" }}>
-            {state.pledges?.map((p) => (
+            {state.pledges.map((p) => (
               <div key={p.id} style={{ padding: "8px 0", borderBottom: "1px dashed rgba(255,255,255,0.02)" }}>
                 <div style={{ fontWeight: 600 }}>{p.user}</div>
                 <div style={{ color: "#9fb4c9" }}>{p.text}</div>
@@ -540,7 +430,7 @@ export default function EcoJourneyScreen() {
           <h4>Daily Eco Trivia</h4>
           <p style={{ color: "#9fb4c9" }}>{currentTrivia.q}</p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {currentTrivia.options?.map((opt) => (
+            {currentTrivia.options.map((opt) => (
               <Button key={opt} variant="outline-light" onClick={() => answerTrivia(opt)}>{opt}</Button>
             ))}
           </div>
@@ -555,12 +445,10 @@ export default function EcoJourneyScreen() {
           <div style={{ marginTop: 8 }}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <div>Total Points</div>
-              <p>{state.points} pts</p>
               <div style={{ fontWeight: 700, color: "#4fc3ff" }}>{state.points} pts</div>
             </div>
             <div style={{ marginTop: 8, display: "flex", justifyContent: "space-between" }}>
               <div>CO₂ Saved (est.)</div>
-              <p>{(state.points * 0.05).toFixed(1)} kg</p> {/* example: 1 point = 0.05 kg CO₂ */}
               <div style={{ fontWeight: 700 }}>{(state.points * 0.5).toFixed(1)} kg</div>
             </div>
 
@@ -568,10 +456,10 @@ export default function EcoJourneyScreen() {
             <h6>Achievements</h6>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
               {state.goals.filter((g) => g.done).length
-                ? state.goals.filter((g) => g.done)?.map((g) => (
+                ? state.goals.filter((g) => g.done).map((g) => (
                     <div key={g.id} className="glass-card" style={{ padding: "6px 8px" }}>{g.text}</div>
                   ))
-                : <small style={{ color: "#9fb4c9" }}>No achievements yet!</small>}
+                : <small style={{ color: "#9fb4c9" }}>No achievements yet</small>}
             </div>
           </div>
         </Card>
@@ -631,5 +519,6 @@ export default function EcoJourneyScreen() {
       `}</style>
     </div>
   );
-}
+}   
+
 
