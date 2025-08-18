@@ -6,6 +6,7 @@ const goalSchema = new mongoose.Schema(
     title: { type: String, required: true },
     description: { type: String, default: "" },
     completed: { type: Boolean, default: false },
+    points: { type: Number, default: 10 }, //  new field, safe default
   },
   { _id: true, timestamps: true }
 );
@@ -31,17 +32,26 @@ const pledgeSchema = new mongoose.Schema(
 const ecoJourneySchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, unique: true },
+
+    //  each user has their own embedded goals
     goals: [goalSchema],
+
     trivia: [triviaSchema],
+
     streak: { type: Number, default: 0 },
+
+    
     challenges: [{ type: String }],
+
     pledges: [pledgeSchema],
+
     points: { type: Number, default: 0 },
-    unlockedLocations: { type: [String], default: ["Home"] }, // ✅ fixed to array
+
+    unlockedLocations: { type: [String], default: ["Home"] },
+
     lastSpinAt: { type: Date, default: null }, // optional, for spin cooldowns
   },
   { timestamps: true }
 );
-
 
 module.exports = mongoose.model("EcoJourney", ecoJourneySchema);

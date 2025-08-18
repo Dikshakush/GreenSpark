@@ -4,7 +4,19 @@ const Challenge = require('../models/Challenge');
 const User = require('../models/User');
 const Badge = require('../models/Badge');
 const Pledge = require('../models/Pledge');
-const EcoJourney = require('../models/EcoJourney'); // ✅ Added
+const EcoJourney = require('../models/EcoJourney'); 
+
+// @desc    Get all challenges
+// @route   GET /api/eco-journey/challenges
+// @access  Private
+exports.getChallenges = async (req, res) => {
+  try {
+    const challenges = await Challenge.find();
+    res.json(challenges);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
 
 // @desc    Get user's eco journey data
 // @route   GET /api/eco-journey
@@ -38,50 +50,60 @@ exports.getJourney = async (req, res) => {
 // @access  Private
 exports.addGoal = async (req, res) => {
   try {
-    const { description, type } = req.body;
+    console.log("➡️ Add Goal request body:", req.body);
+    console.log("➡️ Current user:", req.user ? req.user._id : "No user in req");
 
-    const goal = new Goal({
-      user: req.user._id,
-      description,
-      type
-    });
+    const { description } = req.body;
+    if (!description) {
+      return res.status(400).json({ message: "Description is required" });
+    }
 
-    await goal.save();
+    // Find or create EcoJourney for this user
+    let journey = await EcoJourney.findOne({ user: req.user._id });
+    if (!journey) {
+      console.log("ℹ️ No EcoJourney found, creating a new one...");
+      journey = await EcoJourney.create({ user: req.user._id, goals: [] });
+    }
 
-    // Add goal to EcoJourney
-    const journey = await EcoJourney.findOne({ user: req.user._id });
-    journey.goals.push({
+    // Create embedded goal (inside EcoJourney)
+    const newGoal = {
       title: description,
-      completed: false
-    });
+      description,
+      completed: false,
+      points: 10, // default points (can be adjusted)
+    };
+
+    journey.goals.push(newGoal);
     await journey.save();
 
-    res.status(201).json(goal);
+    // return the new goal (last one added)
+    res.status(201).json(journey.goals[journey.goals.length - 1]);
   } catch (error) {
-    res.status(500).json({ message: 'Server Error' });
+    console.error("❌ Error in addGoal:", error);
+    res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
 
-// @desc    Toggle goal completion
+//@desc    Toggle goal completion
 // @route   POST /api/eco-journey/goals/:goalId/toggle
 // @access  Private
 exports.toggleGoal = async (req, res) => {
   try {
-    const goal = await Goal.findById(req.params.goalId);
+    const journey = await EcoJourney.findOne({ user: req.user._id });
+    if (!journey) return res.status(404).json({ message: 'Journey not found' });
 
+    const goal = journey.goals.id(req.params.goalId);
     if (!goal) return res.status(404).json({ message: 'Goal not found' });
-    if (goal.user.toString() !== req.user._id.toString()) return res.status(401).json({ message: 'Not authorized' });
 
     goal.completed = !goal.completed;
-    await goal.save();
 
     // Update EcoJourney points if completed
-    const journey = await EcoJourney.findOne({ user: req.user._id });
     if (goal.completed) {
-      journey.points += 5; // example: 5 points per completed goal
+      journey.points += goal.points;
     } else {
-      journey.points -= 5; // remove points if uncompleted
+      journey.points -= goal.points;
     }
+
     await journey.save();
 
     res.json(goal);
@@ -126,6 +148,25 @@ exports.completeChallenge = async (req, res) => {
       earnedBadges: badges
     });
   } catch (error) {
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+
+// @desc    Get next trivia question
+// @route   GET /api/eco-journey/trivia/next
+// @access  Private
+exports.nextTrivia = async (req, res) => {
+  try {
+    const journey = await EcoJourney.findOne({ user: req.user._id });
+    if (!journey) return res.status(404).json({ message: 'Journey not found' });
+
+    // Find first unanswered trivia
+    const nextTrivia = journey.trivia.find(t => !t.answered) || null;
+
+    res.json({ nextTrivia });
+  } catch (error) {
+    console.error("❌ Error in nextTrivia:", error);
     res.status(500).json({ message: 'Server Error' });
   }
 };

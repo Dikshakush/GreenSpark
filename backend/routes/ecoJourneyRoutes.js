@@ -6,8 +6,10 @@ const {
   toggleGoal,
   answerTrivia,
   incrementStreak,
+  getChallenges,
   completeChallenge,
   nextTrivia,
+  addPledge,
 } = require("../controllers/ecoJourneyController");
 const { protect } = require("../middleware/authMiddleware");
 
@@ -17,7 +19,9 @@ router.post("/goals", protect, addGoal);
 router.post("/goals/:goalId/toggle", protect, toggleGoal);
 router.post("/trivia/:triviaId", protect, answerTrivia);
 router.post("/streak", protect, incrementStreak);
+router.get('/challenges', protect, getChallenges);
 router.post("/challenges/complete", protect, completeChallenge);
+router.post("/pledges", protect, addPledge);
 
 
 
