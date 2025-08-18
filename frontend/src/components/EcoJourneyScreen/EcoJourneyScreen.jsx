@@ -1,5 +1,3 @@
-can you see and analyze this code and tell me what it do ?
-
 // EcoJourneyScreen.jsx
 import React, { useEffect, useMemo, useState, useRef, useContext } from "react";
 import { PointsContext } from "../../context/PointsContext";
