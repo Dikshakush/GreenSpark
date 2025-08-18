@@ -6,7 +6,11 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': 'http://localhost:5000', //  to enable API routing
+      '/api': 'http://localhost:5000', // to enable API routing locally
     },
   },
+  build: {
+    outDir: "dist", // Netlify expects dist/
+  },
+  base: "/", // 👈 VERY IMPORTANT for Netlify
 })
