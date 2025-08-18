@@ -37,7 +37,7 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPasswordScreen />} />
             <Route path="/setNew-password" element={<SetNewPasswordScreen />} />S
             <Route path="/about" element={<AboutScreen />} />
-            <Route path="/eco-journey" element={<EcoJourneyScreen />} />
+            <Route path="/ecojourney" element={<EcoJourneyScreen />} />
             <Route path="/community" element={<CommunityScreen />} />
             <Route path="/new-post" element={<NewPostScreen />} />
             <Route path="*" element={<NotFound />} />

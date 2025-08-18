@@ -208,7 +208,7 @@ const { points } = useContext(PointsContext);
         <div style={{ marginTop: '1rem' }}>
           <h6>Start Your Eco Journey</h6>
           <p>*Begin your personalized path towards making a positive impact on the planet.</p>
-          <Button variant="secondary" onClick={() => navigate('/eco-journey')}>Start Eco Journey</Button>
+          <Button variant="secondary" onClick={() => navigate('/ecojourney')}>Start Eco Journey</Button>
         </div>
 
         <div style={{ marginTop: '1rem' }}>

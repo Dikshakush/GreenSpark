@@ -36,7 +36,7 @@ function App() {
         <Route path="/verify-otp" element={<VerifyOTPScreen />} />
         <Route path="/reset-password" element={<SetNewPasswordScreen />} />
         <Route path="/about" element={<AboutScreen />} />
-        <Route path="/eco-journey" element={<EcoJourneyScreen />} />
+        <Route path="/ecojourney" element={<EcoJourneyScreen />} />
         <Route path="/community" element={<CommunityScreen />} />
         <Route path="/new-post" element={<NewPostScreen />} />
 
