@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser'); // ✅ Add this line
 require('dotenv').config();
 
 // ✅ Check for required environment variables
@@ -44,6 +45,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use(cookieParser()); // ✅ Add this line
 
 // Routes
 app.use('/api/tasks', taskRoutes);

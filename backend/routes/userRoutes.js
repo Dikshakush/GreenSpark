@@ -17,13 +17,52 @@ const router = express.Router();
 
 // Auth Routes
 router.post('/register', registerUser);
-router.post('/login', loginUser);
+
+//  login route to set cookie
+router.post('/login', async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+
+    // Call loginUser controller logic
+    const user = await loginUser(req, res);
+
+    // If login failed, loginUser should already handle response
+    if (!user) return;
+
+    // Create JWT token 
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: '30d',
+    });
+
+    // Set token as HttpOnly cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // only HTTPS in production
+      sameSite: 'None', // allow cross-origin if frontend is on different domain
+    });
+
+    // Return success response (without breaking existing frontend expectations)
+    res.status(200).json({
+      success: true,
+      message: 'Logged in successfully',
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get('/profile', protect, getUserProfile);
 
 // OTP-based Password Reset Routes
-router.post('/send-otp', sendOTP);         // Body: { email }
-router.post('/verify-otp', verifyOTP);     // Body: { email, otp }
-router.post('/reset-password', resetPasswordWithOTP); // Body: { email, newPassword, confirmPassword }
+router.post('/send-otp', sendOTP);         
+router.post('/verify-otp', verifyOTP);     
+router.post('/reset-password', resetPasswordWithOTP); 
 
 // Get User Streak
 router.get('/streak', protect, getUserStreak);

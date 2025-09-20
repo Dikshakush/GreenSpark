@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Button, Card, Form, Image } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import "../DashBoard/DashBoard.css"; // ✅ Apply dashboard theme
+import "../DashBoard/DashBoard.css"; 
 
 const CommunityScreen = () => {
   const [posts, setPosts] = useState([]);
@@ -12,7 +12,10 @@ const CommunityScreen = () => {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const { data } = await axios.get("https://greenspark-backend-yuw8.onrender.com/api/community", { withCredentials: true });
+        const { data } = await axios.get(
+          "https://greenspark-backend-yuw8.onrender.com/api/community",
+          { withCredentials: true } 
+        );
         setPosts(data);
       } catch (err) {
         console.error("Error fetching posts", err);
@@ -28,7 +31,7 @@ const CommunityScreen = () => {
       const { data } = await axios.post(
         `https://greenspark-backend-yuw8.onrender.com/api/community/${postId}/comment`,
         { text: commentText[postId] },
-        { withCredentials: true }
+        { withCredentials: true } 
       );
       setPosts(posts.map((p) => (p._id === postId ? data : p)));
       setCommentText({ ...commentText, [postId]: "" });

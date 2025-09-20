@@ -27,6 +27,7 @@ const LoginScreen = () => {
       setLoading(true);
       setError('');
 
+      
       const { data } = await axios.post(
         'https://greenspark-backend-yuw8.onrender.com/api/users/login',
         { email, password },
@@ -34,17 +35,18 @@ const LoginScreen = () => {
           headers: {
             'Content-Type': 'application/json',
           },
+          withCredentials: true, 
         }
       );
 
       localStorage.setItem('userInfo', JSON.stringify(data));
 
-// ✅ Also store token separately for other components
-if (data.token) {
-  localStorage.setItem('token', data.token);
-}
+      
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
 
-navigate('/dashBoard');
+      navigate('/dashBoard');
 
     } catch (err) {
       setError(
@@ -133,4 +135,5 @@ navigate('/dashBoard');
     </div>
   );
 };
+
 export default LoginScreen;
