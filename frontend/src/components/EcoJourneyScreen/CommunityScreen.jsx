@@ -12,10 +12,7 @@ const CommunityScreen = () => {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const { data } = await axios.get(
-          "https://greenspark-backend-yuw8.onrender.com/api/community",
-          { withCredentials: true } 
-        );
+        const { data } = await axios.get("https://greenspark-backend-yuw8.onrender.com/api/community", { withCredentials: true });
         setPosts(data);
       } catch (err) {
         console.error("Error fetching posts", err);
@@ -31,7 +28,7 @@ const CommunityScreen = () => {
       const { data } = await axios.post(
         `https://greenspark-backend-yuw8.onrender.com/api/community/${postId}/comment`,
         { text: commentText[postId] },
-        { withCredentials: true } 
+        { withCredentials: true }
       );
       setPosts(posts.map((p) => (p._id === postId ? data : p)));
       setCommentText({ ...commentText, [postId]: "" });
@@ -205,3 +202,4 @@ const CommunityScreen = () => {
 };
 
 export default CommunityScreen;
+  

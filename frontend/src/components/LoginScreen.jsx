@@ -31,19 +31,20 @@ const LoginScreen = () => {
         'https://greenspark-backend-yuw8.onrender.com/api/users/login',
         { email, password },
         {
-          headers: { 'Content-Type': 'application/json' },
-          withCredentials: true, 
+          headers: {
+            'Content-Type': 'application/json',
+          },
         }
       );
 
       localStorage.setItem('userInfo', JSON.stringify(data));
 
-      // Optionally store token separately if needed by other components
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-      }
+//  Also store token separately for other components
+if (data.token) {
+  localStorage.setItem('token', data.token);
+}
 
-      navigate('/dashBoard');
+navigate('/dashBoard');
 
     } catch (err) {
       setError(
@@ -132,5 +133,4 @@ const LoginScreen = () => {
     </div>
   );
 };
-
-export default LoginScreen;
+export default LoginScreen;  

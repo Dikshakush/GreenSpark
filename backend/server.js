@@ -1,9 +1,8 @@
 const express = require('express');
 const cors = require('cors');
-const cookieParser = require('cookie-parser'); // ✅ Add this line
 require('dotenv').config();
 
-// ✅ Check for required environment variables
+//  Check for required environment variables
 if (!process.env.MONGO_URI) {
   throw new Error("❌ MONGO_URI is not defined in .env");
 }
@@ -28,7 +27,7 @@ const connectDB = require("./config/db");
 // Error middleware
 const { errorHandler } = require('./middleware/errorMiddleware');
 
-// ✅ Connect to DB first, then start server
+//  Connect to DB first, then start server
 connectDB();
 
 const app = express();
@@ -45,7 +44,6 @@ app.use(cors({
 }));
 
 app.use(express.json());
-app.use(cookieParser()); // ✅ Add this line
 
 // Routes
 app.use('/api/tasks', taskRoutes);
@@ -65,7 +63,7 @@ app.get('/', (req, res) => {
   res.send('GreenSpark API is running');
 });
 
-// ✅ Error handler (must be after routes)
+//  Error handler (must be after routes)
 app.use(errorHandler);
 
 // Start server
