@@ -42,10 +42,14 @@ const NewPostScreen = () => {
     }
 
     try {
-      await axios.post("https://greenspark-backend-yuw8.onrender.com/api/community", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-        withCredentials: true,
-      });
+      await axios.post(
+        "https://greenspark-backend-yuw8.onrender.com/api/community",
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+          withCredentials: true, 
+        }
+      );
       navigate("/community");
     } catch (err) {
       setError(err.response?.data?.message || "Failed to create post");
